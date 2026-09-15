@@ -6,7 +6,10 @@ struct FamilySearchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            PeopleListView(viewModel: container.makePeopleListViewModel())
+            PeopleListView(
+                viewModel: container.makePeopleListViewModel(),
+                makePortraitViewModel: container.makePortraitViewModel
+            )
         }
     }
 }

@@ -119,42 +119,19 @@ struct StoredPeopleRepository: PeopleRepository {
         self.seedProfiles = seedProfiles
     }
 
-    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
-        AsyncThrowingStream { continuation in
-            let producer = Task {
-                do {
-                    try await seedIfNeeded()
-                    guard !Task.isCancelled else { return }
-                    continuation.yield(.cached(try await store.summaries()))
-                    continuation.finish()
-                } catch is CancellationError {
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in producer.cancel() }
-        }
+    func loadPeople() async throws -> RepositoryResult<[PersonSummary]> {
+        try await seedIfNeeded()
+        try Task.checkCancellation()
+        return RepositoryResult(try await store.summaries())
     }
 
-    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
-        AsyncThrowingStream { continuation in
-            let producer = Task {
-                do {
-                    try await seedIfNeeded()
-                    guard !Task.isCancelled else { return }
-                    guard let profile = try await store.profile(id: id) else {
-                        continuation.finish(throwing: PeopleRepositoryError.notFound(id)); return
-                    }
-                    continuation.yield(.cached(profile)); continuation.finish()
-                } catch is CancellationError {
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in producer.cancel() }
+    func loadProfile(id: PersonID) async throws -> RepositoryResult<PersonProfile> {
+        try await seedIfNeeded()
+        try Task.checkCancellation()
+        guard let profile = try await store.profile(id: id) else {
+            throw PeopleRepositoryError.notFound(id)
         }
+        return RepositoryResult(profile)
     }
 
     private func seedIfNeeded() async throws {

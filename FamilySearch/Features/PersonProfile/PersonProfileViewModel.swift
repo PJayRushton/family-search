@@ -55,13 +55,10 @@ final class PersonProfileViewModel {
         state = .loading
 
         do {
-            for try await snapshot in repository.profile(id: personID) {
-                try Task.checkCancellation()
-                let mapped = map(snapshot)
-                try Task.checkCancellation()
-                guard generation == loadGeneration else { return }
-                state = mapped
-            }
+            let result = try await repository.loadProfile(id: personID)
+            try Task.checkCancellation()
+            guard generation == loadGeneration else { return }
+            state = map(result)
         } catch is CancellationError {
             return
         } catch {
@@ -74,21 +71,15 @@ final class PersonProfileViewModel {
         loadGeneration += 1
     }
 
-    private func map(_ snapshot: RepositorySnapshot<PersonProfile>) -> State {
-        switch snapshot {
-        case let .cached(profile):
-            return .content(profile: makePresentation(from: profile),
-                            isStale: true, notice: "Refreshing…")
-        case let .fresh(profile):
-            return .content(profile: makePresentation(from: profile),
-                            isStale: false, notice: nil)
-        case let .stale(profile, issue):
-            let notice = switch issue {
+    private func map(_ result: RepositoryResult<PersonProfile>) -> State {
+        let notice = result.refreshIssue.map { issue in
+            switch issue {
             case let .refreshFailed(message): message
             }
-            return .content(profile: makePresentation(from: profile),
-                            isStale: true, notice: notice)
         }
+        return .content(profile: makePresentation(from: result.value),
+                        isStale: result.refreshIssue != nil,
+                        notice: notice)
     }
 
     private func makePresentation(from profile: PersonProfile) -> PersonProfilePresentationModel {

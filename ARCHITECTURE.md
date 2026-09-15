@@ -18,11 +18,11 @@ Every SwiftUI screen or component ends in `View`. Feature views receive their vi
 
 ### View models
 
-Every feature view model ends in `ViewModel` and is visibly injected into its view. View models are `@MainActor` observable reference types. They translate repository snapshots into immutable presentation models and presentation state, handle user intents, and own screen-scoped request lifetime. Each load receives a generation token; a cancelled or superseded request cannot replace newer state. Cancellation is not presented as a user-facing failure.
+Every feature view model ends in `ViewModel` and is visibly injected into its view. View models are `@MainActor` observable reference types. They translate repository results into immutable presentation models and presentation state, handle user intents, and own screen-scoped request lifetime. Each load receives a generation token; a cancelled or superseded request cannot replace newer state. Cancellation is not presented as a user-facing failure.
 
 ### Domain
 
-Domain structs express what the app needs without `Codable`, SwiftData annotations, or UI imports. `PeopleRepository` streams cached and refreshed domain snapshots so cache policy remains outside presentation. `PortraitRepository` is separate because binary storage and eviction have different concerns from record storage.
+Domain structs express what the app needs without `Codable`, SwiftData annotations, or UI imports. `PeopleRepository` provides ordinary async load methods and returns a stored domain value plus an optional refresh issue. `PortraitRepository` is separate because binary storage and eviction have different concerns from record storage.
 
 ### Data implementations
 
@@ -42,7 +42,7 @@ Views that display records include previews built through the same view-model in
 
 - UI-observed mutation is isolated to `MainActor`.
 - Repository protocols are `Sendable`; implementations protect mutable state with actors or framework-specific isolation.
-- Structured `.task` work is cancelled when its view disappears, and repository streams cancel producers on termination.
+- Structured `.task` work is cancelled when its view disappears.
 - Cancellation propagates rather than becoming a generic error.
 - A load generation prevents an older response from overwriting a newer retry.
 
@@ -52,4 +52,4 @@ The app uses one app target rather than separate framework modules because the d
 
 ## Readability
 
-The code favors concrete names, small types, and direct control flow over clever abstractions. Comments explain architectural boundaries or decisions that are easy to misread—such as why repositories stream snapshots and why loads carry a generation—but do not narrate ordinary Swift syntax. This keeps the implementation practical to review and walk through.
+The code favors concrete names, small types, and direct control flow over clever abstractions. Comments explain architectural boundaries or decisions that are easy to misread—such as why fresh values are reread from SwiftData and why loads carry a generation—but do not narrate ordinary Swift syntax. This keeps the implementation practical to review and walk through.

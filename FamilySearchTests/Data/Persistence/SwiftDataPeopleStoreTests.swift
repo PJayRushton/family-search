@@ -72,13 +72,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
 
     func testSeededPreviewUsesStoredDomainValues() async throws {
         let container = PreviewContainer.populated()
-        var snapshots: [RepositorySnapshot<[PersonSummary]>] = []
-
-        for try await snapshot in container.peopleRepository.people() { snapshots.append(snapshot) }
-
-        guard case let .cached(people) = snapshots.first else {
-            return XCTFail("Expected preview repository to emit persisted people")
-        }
+        let people = try await container.peopleRepository.loadPeople().value
         XCTAssertEqual(Set(people.map(\.name.fullName)), ["Ezra Whitcomb", "Maya Chen"])
     }
 

@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class LiveRepositoryTests: XCTestCase {
-    func testPeopleEmitsPersistedCacheThenPersistsAndRereadsRemoteRecords() async throws {
+    func testPeoplePersistsAndRereadsRemoteRecords() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let cached = Self.person(id: "CACHED", given: "Beth", surname: "Cache")
         try await store.upsert(summaries: [cached])
@@ -15,20 +15,16 @@ final class LiveRepositoryTests: XCTestCase {
             store: store
         )
 
-        let snapshots = try await collect(repository.people())
+        let result = try await repository.loadPeople()
 
-        XCTAssertEqual(snapshots.count, 2)
-        guard case let .cached(saved) = snapshots[0], case let .fresh(fresh) = snapshots[1] else {
-            return XCTFail("Expected cached then fresh snapshots")
-        }
-        XCTAssertEqual(saved, [cached])
+        XCTAssertNil(result.refreshIssue)
         // SwiftData applies its surname sort, proving network values did not bypass the store.
-        XCTAssertEqual(fresh.map(\.id), [alpha.id, zulu.id])
+        XCTAssertEqual(result.value.map(\.id), [alpha.id, zulu.id])
         let storedAlpha = try await store.summary(id: alpha.id)
         XCTAssertEqual(storedAlpha, alpha)
     }
 
-    func testPeopleEmitsStaleCacheWhenRefreshFails() async throws {
+    func testPeopleReturnsSavedDataWhenRefreshFails() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let cached = Self.person(id: "CACHED", given: "Beth", surname: "Cache")
         try await store.upsert(summaries: [cached])
@@ -37,13 +33,10 @@ final class LiveRepositoryTests: XCTestCase {
             store: store
         )
 
-        let snapshots = try await collect(repository.people())
+        let result = try await repository.loadPeople()
 
-        XCTAssertEqual(snapshots.count, 2)
-        guard case let .stale(people, _) = snapshots.last else {
-            return XCTFail("Expected stale snapshot")
-        }
-        XCTAssertEqual(people, [cached])
+        XCTAssertEqual(result.value, [cached])
+        XCTAssertNotNil(result.refreshIssue)
     }
 
     func testPeopleThrowsOnFirstLaunchWhenRefreshFails() async {
@@ -54,7 +47,7 @@ final class LiveRepositoryTests: XCTestCase {
         )
 
         do {
-            _ = try await collect(repository.people())
+            _ = try await repository.loadPeople()
             XCTFail("Expected first-launch failure")
         } catch {
             XCTAssertEqual(error as? TestError, .offline)
@@ -92,15 +85,15 @@ final class LiveRepositoryTests: XCTestCase {
         let repository = ControlledPeopleRepository()
         let viewModel = PeopleListViewModel(repository: repository)
         let olderLoad = Task { await viewModel.load() }
-        await repository.waitForStreamCount(1)
+        await repository.waitForRequestCount(1)
         let newerLoad = Task { await viewModel.load() }
-        await repository.waitForStreamCount(2)
+        await repository.waitForRequestCount(2)
         let newer = Self.person(id: "NEW", given: "New", surname: "Result")
         let older = Self.person(id: "OLD", given: "Old", surname: "Result")
 
-        repository.finishStream(at: 1, with: .fresh([newer]))
+        repository.finishRequest(at: 1, with: RepositoryResult([newer]))
         await newerLoad.value
-        repository.finishStream(at: 0, with: .fresh([older]))
+        repository.finishRequest(at: 0, with: RepositoryResult([older]))
         await olderLoad.value
 
         guard case let .content(rows, _, _) = viewModel.state else {
@@ -157,24 +150,25 @@ private actor PortraitClientSpy: PortraitClient {
 
 private final class ControlledPeopleRepository: PeopleRepository, @unchecked Sendable {
     private let lock = NSLock()
-    private var continuations: [AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error>.Continuation] = []
+    private var continuations: [CheckedContinuation<RepositoryResult<[PersonSummary]>, Error>] = []
 
-    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
-        AsyncThrowingStream { continuation in lock.withLock { continuations.append(continuation) } }
+    func loadPeople() async throws -> RepositoryResult<[PersonSummary]> {
+        try await withCheckedThrowingContinuation { continuation in
+            lock.withLock { continuations.append(continuation) }
+        }
     }
 
-    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
-        AsyncThrowingStream { $0.finish(throwing: TestError.offline) }
+    func loadProfile(id: PersonID) async throws -> RepositoryResult<PersonProfile> {
+        throw TestError.offline
     }
 
-    func waitForStreamCount(_ count: Int) async {
+    func waitForRequestCount(_ count: Int) async {
         while lock.withLock({ continuations.count }) < count { await Task.yield() }
     }
 
-    func finishStream(at index: Int, with snapshot: RepositorySnapshot<[PersonSummary]>) {
+    func finishRequest(at index: Int, with result: RepositoryResult<[PersonSummary]>) {
         let continuation = lock.withLock { continuations[index] }
-        continuation.yield(snapshot)
-        continuation.finish()
+        continuation.resume(returning: result)
     }
 }
 
@@ -193,12 +187,4 @@ private actor ControlledPortraitRepository: PortraitRepository {
         continuation?.resume(returning: data)
         continuation = nil
     }
-}
-
-private func collect<Value: Sendable>(
-    _ stream: AsyncThrowingStream<RepositorySnapshot<Value>, Error>
-) async throws -> [RepositorySnapshot<Value>] {
-    var snapshots: [RepositorySnapshot<Value>] = []
-    for try await snapshot in stream { snapshots.append(snapshot) }
-    return snapshots
 }

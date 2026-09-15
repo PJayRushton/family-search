@@ -12,7 +12,7 @@ final class FoundationTests: XCTestCase {
 
     func testViewModelMapsFreshPeopleToContent() async {
         let person = PersonSummary.fixture()
-        let viewModel = PeopleListViewModel(repository: PeopleRepositoryFake(snapshots: [.fresh([person])]))
+        let viewModel = PeopleListViewModel(repository: PeopleRepositoryFake(result: RepositoryResult([person])))
 
         await viewModel.load()
 
@@ -34,30 +34,23 @@ final class FoundationTests: XCTestCase {
         )
     }
 
-    func testViewModelDistinguishesCachedEmptyAndStaleStates() async {
+    func testViewModelDistinguishesEmptyAndStaleStates() async {
         let person = PersonSummary.fixture()
-        let cachedViewModel = PeopleListViewModel(
-            repository: PeopleRepositoryFake(snapshots: [.cached([person])])
-        )
         let emptyViewModel = PeopleListViewModel(
-            repository: PeopleRepositoryFake(snapshots: [.fresh([])])
+            repository: PeopleRepositoryFake(result: RepositoryResult([]))
         )
         let staleViewModel = PeopleListViewModel(
-            repository: PeopleRepositoryFake(
-                snapshots: [.stale([person], .refreshFailed(message: "Offline"))]
-            )
+            repository: PeopleRepositoryFake(result: RepositoryResult(
+                [person], refreshIssue: .refreshFailed(message: "Offline")
+            ))
         )
 
-        await cachedViewModel.load()
         await emptyViewModel.load()
         await staleViewModel.load()
 
-        guard case let .content(_, cachedIsStale, cachedNotice) = cachedViewModel.state,
-              case let .content(_, staleIsStale, staleNotice) = staleViewModel.state else {
-            return XCTFail("Expected cached and stale content states")
+        guard case let .content(_, staleIsStale, staleNotice) = staleViewModel.state else {
+            return XCTFail("Expected stale content state")
         }
-        XCTAssertTrue(cachedIsStale)
-        XCTAssertEqual(cachedNotice, "Refreshing…")
         XCTAssertEqual(emptyViewModel.state, .empty)
         XCTAssertTrue(staleIsStale)
         XCTAssertEqual(staleNotice, "Offline")
@@ -81,17 +74,14 @@ final class FoundationTests: XCTestCase {
 }
 
 private struct PeopleRepositoryFake: PeopleRepository {
-    let snapshots: [RepositorySnapshot<[PersonSummary]>]
+    let result: RepositoryResult<[PersonSummary]>
 
-    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
-        AsyncThrowingStream { continuation in
-            snapshots.forEach { continuation.yield($0) }
-            continuation.finish()
-        }
+    func loadPeople() async throws -> RepositoryResult<[PersonSummary]> {
+        result
     }
 
-    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
-        AsyncThrowingStream { $0.finish(throwing: PeopleRepositoryError.notFound(id)) }
+    func loadProfile(id: PersonID) async throws -> RepositoryResult<PersonProfile> {
+        throw PeopleRepositoryError.notFound(id)
     }
 }
 

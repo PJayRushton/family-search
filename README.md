@@ -26,13 +26,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the dependency direction, responsibil
 
 The list endpoint is fetched as the one small collection the service provides. Full profiles are fetched lazily through the separate `/persons/{id}.json` endpoint only when a user opens one. Opening a relative therefore triggers that relative's profile request; the app does not crawl or download the family graph.
 
-Each repository stream follows the same policy:
+Each repository load follows the same policy:
 
-1. Read and emit persisted content immediately when available.
-2. Attempt the remote refresh.
-3. Persist the decoded domain value.
-4. Read it back from the store and emit the refreshed value.
-5. If refresh fails, keep showing saved content with a stale-data explanation.
+1. Fetch the latest value from the API.
+2. Persist the decoded domain value in SwiftData.
+3. Read it back from SwiftData and return that stored value.
+4. If the network fails, read the existing SwiftData value instead and mark it stale.
+5. If neither network nor saved data is available, show the first-launch failure state.
 
 Network values never bypass persistence on their way to the UI, so SwiftData remains the record source of truth online and offline. Portraits use the same cache-on-fetch idea with a durable file store because binary files and their eventual eviction policy are different from queryable records.
 
@@ -46,7 +46,7 @@ List membership is stored separately from profile completeness. That lets a prof
 
 The root `NavigationStack` carries only stable `PersonID` values. Each destination constructs its injected profile view model through the composition root, which makes relative navigation recursive without coupling screens to persistence objects.
 
-SwiftUI `.task` owns screen work, including retries, so disappearance cancels the task. Repository stream termination cancels its producer; cancellation is preserved through URLSession; generation tokens prevent a late response from overwriting a newer load. UI-observed mutation stays on the main actor, while clients, repositories, portrait storage, and SwiftData access use actor isolation.
+SwiftUI `.task` owns screen work, including retries, so disappearance cancels the load. Cancellation is preserved through URLSession; generation tokens prevent a late response from overwriting a newer load. UI-observed mutation stays on the main actor, while clients, repositories, portrait storage, and SwiftData access use actor isolation.
 
 ## States, previews, and tests
 
@@ -58,7 +58,7 @@ The 33 tests focus on places where defects would be expensive or subtle:
 
 - service decoding, relative URL resolution, malformed data, HTTP/transport errors, and unsafe IDs;
 - SwiftData round trips, direct lookup behavior, profile merging, list membership, and reopening a disk store;
-- cache-first and offline fallback ordering;
+- network-to-store behavior and offline fallback;
 - view-model mapping, retry, cancellation, and stale-response protection;
 - durable portrait reads and writes.
 

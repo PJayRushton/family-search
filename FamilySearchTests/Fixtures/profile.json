@@ -1,0 +1,22 @@
+{
+  "id": "L4RX-9FT",
+  "name": { "given": "Ezra", "surname": "Whitcomb" },
+  "sex": "male",
+  "living": false,
+  "birth": { "date": "12 March 1868", "year": 1868, "place": "Nauvoo, Illinois" },
+  "death": { "date": "3 November 1941", "year": 1941, "place": "Ogden, Utah" },
+  "portraitUrl": "portraits/L4RX-9FT.jpg",
+  "occupation": null,
+  "biography": "A concise fixture biography.",
+  "relatives": [
+    {
+      "id": "M2KD-7QP",
+      "relationship": "father",
+      "name": { "given": "Amos", "surname": "Whitcomb" },
+      "birthYear": 1838,
+      "deathYear": 1903
+    }
+  ],
+  "sources": [],
+  "lastModified": "2026-08-14T09:21:00Z"
+}

@@ -4,9 +4,9 @@ import XCTest
 @testable import FamilySearch
 
 @MainActor
-final class SwiftDataPeopleStoreTests: XCTestCase {
+final class PeopleRepositoryPersistenceTests: XCTestCase {
     func testSummaryUpsertAndDirectLookupRoundTripNullableFields() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
+        let store = try LivePeopleRepository.makeInMemory()
         let summary = Self.summary(death: nil, portrait: Self.portrait)
 
         try await store.upsert(summaries: [summary])
@@ -20,7 +20,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
     }
 
     func testProfilePersistsRelativesAndNullableOccupation() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
+        let store = try LivePeopleRepository.makeInMemory()
         let profile = PersonProfile(
             summary: Self.summary(death: Self.death, portrait: Self.portrait),
             occupation: nil,
@@ -35,7 +35,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
     }
 
     func testProfileOnlyRecordDoesNotAppearInPeopleList() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
+        let store = try LivePeopleRepository.makeInMemory()
         let profile = PersonProfile(
             summary: Self.summary(), occupation: nil, biography: "Profile only", relatives: []
         )
@@ -49,7 +49,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
     }
 
     func testSummaryRefreshDoesNotEraseFetchedProfileFields() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
+        let store = try LivePeopleRepository.makeInMemory()
         let profile = PersonProfile(
             summary: Self.summary(), occupation: "Carpenter", biography: "Biography",
             relatives: [Self.relative]
@@ -88,9 +88,9 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
             relatives: [Self.relative]
         )
 
-        let originalStore = try SwiftDataPeopleStore.makePersistent(at: databaseURL)
+        let originalStore = try LivePeopleRepository.makePersistent(at: databaseURL)
         try await originalStore.upsert(profile: profile)
-        let reopenedStore = try SwiftDataPeopleStore.makePersistent(at: databaseURL)
+        let reopenedStore = try LivePeopleRepository.makePersistent(at: databaseURL)
 
         let reopenedProfile = try await reopenedStore.profile(id: profile.id)
         XCTAssertEqual(reopenedProfile, profile)

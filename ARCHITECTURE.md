@@ -26,7 +26,7 @@ Domain structs express what the app needs without `Codable`, SwiftData annotatio
 
 ### Data implementations
 
-SwiftData is the app's single source of truth. The concrete repository owns remote/cache selection: it reads saved entities, asks the API adapter for DTOs when refreshing, persists those DTOs, and then maps a fresh store read into domain models. Fresh network values do not bypass persistence on their way to a view model. This gives online and offline paths the same entity-to-domain mapping and makes durable behavior the default rather than a fallback bolted onto the UI.
+SwiftData is the app's single source of truth. The concrete `LivePeopleRepository` is a `@ModelActor` that owns both synchronization and persistence: it asks the API adapter for domain values, saves them, and returns a fresh SwiftData query. Fresh network values do not bypass persistence on their way to a view model. This gives online and offline paths the same entity-to-domain mapping without a separate store abstraction.
 
 Transport DTOs mirror JSON and exist only inside the remote adapter. SwiftData entities mirror the local schema and exist only inside the persistence adapter. A profile query is keyed by person ID rather than implemented as a full-table in-memory scan. Views and view models never receive a `ModelContext`, use `@Query`, or render persisted entities directly.
 

@@ -5,9 +5,7 @@ enum PreviewData {
     /// Previews exercise production SwiftData mapping while remaining memory-only and offline.
     static func makePeopleRepository() -> any PeopleRepository {
         do {
-            let store = try SwiftDataPeopleStore.makeInMemory()
-            return StoredPeopleRepository(
-                store: store,
+            return try LivePeopleRepository.makeInMemory(
                 seedProfiles: [sampleProfile, livingProfile]
             )
         } catch { preconditionFailure("Preview persistence failed: \(error)") }

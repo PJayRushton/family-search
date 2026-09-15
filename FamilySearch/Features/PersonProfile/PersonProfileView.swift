@@ -29,7 +29,7 @@ struct PersonProfileView: View {
         switch viewModel.state {
         case .idle, .loading:
             ProgressView("Loading profile…")
-        case let .content(profile, isStale, notice):
+        case .content(let profile, let isStale, let notice):
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header(profile)
@@ -51,7 +51,7 @@ struct PersonProfileView: View {
                         .background(.yellow.opacity(0.2))
                 }
             }
-        case let .failure(message):
+        case .failure(let message):
             ContentUnavailableView {
                 Label("Couldn't Load Profile", systemImage: "person.crop.circle.badge.exclamationmark")
             } description: {
@@ -65,9 +65,9 @@ struct PersonProfileView: View {
     private func header(_ profile: PersonProfilePresentationModel) -> some View {
         VStack(spacing: 12) {
             PortraitView(viewModel: makePortraitViewModel(profile.portrait))
-            .frame(width: 150, height: 150)
-            .clipShape(Circle())
-            .accessibilityLabel("Portrait of \(profile.name)")
+                .frame(width: 150, height: 150)
+                .clipShape(Circle())
+                .accessibilityLabel("Portrait of \(profile.name)")
 
             Text(profile.name).font(.largeTitle.bold()).multilineTextAlignment(.center)
         }
@@ -103,7 +103,9 @@ struct PersonProfileView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Relatives").font(.headline)
                 ForEach(rows) { row in
-                    Button { onSelectRelative(row.id) } label: {
+                    Button {
+                        onSelectRelative(row.id)
+                    } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(row.relationship).font(.caption).foregroundStyle(.secondary)

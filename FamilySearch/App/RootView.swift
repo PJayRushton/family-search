@@ -20,7 +20,7 @@ struct RootView: View {
             )
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
-                case let .profile(personID):
+                case .profile(let personID):
                     PersonProfileView(
                         viewModel: container.makePersonProfileViewModel(id: personID),
                         makePortraitViewModel: container.makePortraitViewModel,

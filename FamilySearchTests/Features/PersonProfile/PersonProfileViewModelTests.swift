@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+
 @testable import FamilySearch
 
 @MainActor
@@ -11,7 +12,7 @@ final class PersonProfileViewModelTests: XCTestCase {
         let viewModel = makeViewModel(repository: repository)
 
         await viewModel.load()
-        guard case let .content(profile, isStale, notice) = viewModel.state else {
+        guard case .content(let profile, let isStale, let notice) = viewModel.state else {
             return XCTFail("Expected fresh content")
         }
         XCTAssertEqual(profile.name, "Fresh Ezra")
@@ -21,15 +22,17 @@ final class PersonProfileViewModelTests: XCTestCase {
 
     func testStaleResultKeepsCachedProfileAndExplainsRefreshFailure() async {
         let repository = ProfileRepositoryFake(plans: [
-            .result(delay: .zero, result: RepositoryResult(
-                Self.profile(), refreshIssue: .refreshFailed(message: "Offline")
-            ))
+            .result(
+                delay: .zero,
+                result: RepositoryResult(
+                    Self.profile(), refreshIssue: .refreshFailed(message: "Offline")
+                ))
         ])
         let viewModel = makeViewModel(repository: repository)
 
         await viewModel.load()
 
-        guard case let .content(_, isStale, notice) = viewModel.state else {
+        guard case .content(_, let isStale, let notice) = viewModel.state else {
             return XCTFail("Expected usable stale content")
         }
         XCTAssertTrue(isStale)
@@ -39,7 +42,7 @@ final class PersonProfileViewModelTests: XCTestCase {
     func testNoCacheFailureThenRetrySucceeds() async {
         let repository = ProfileRepositoryFake(plans: [
             .failure(.unavailable),
-            .result(delay: .zero, result: RepositoryResult(Self.profile()))
+            .result(delay: .zero, result: RepositoryResult(Self.profile())),
         ])
         let viewModel = makeViewModel(repository: repository)
 
@@ -59,7 +62,7 @@ final class PersonProfileViewModelTests: XCTestCase {
 
         await viewModel.load()
 
-        guard case let .content(profile, _, _) = viewModel.state else {
+        guard case .content(let profile, _, _) = viewModel.state else {
             return XCTFail("Expected living profile")
         }
         XCTAssertNil(profile.death)
@@ -75,15 +78,17 @@ final class PersonProfileViewModelTests: XCTestCase {
 
         await viewModel.load()
 
-        guard case let .content(profile, _, _) = viewModel.state else {
+        guard case .content(let profile, _, _) = viewModel.state else {
             return XCTFail("Expected profile")
         }
-        XCTAssertEqual(profile.relatives, [
-            RelativeRowPresentationModel(
-                id: PersonID(rawValue: "RELATIVE-1"), relationship: "Spouse",
-                name: "Ada Whitcomb", lifespan: "1871–Living"
-            )
-        ])
+        XCTAssertEqual(
+            profile.relatives,
+            [
+                RelativeRowPresentationModel(
+                    id: PersonID(rawValue: "RELATIVE-1"), relationship: "Spouse",
+                    name: "Ada Whitcomb", lifespan: "1871–Living"
+                )
+            ])
         XCTAssertEqual(AppRoute.profile(profile.relatives[0].id), .profile(PersonID(rawValue: "RELATIVE-1")))
     }
 
@@ -104,7 +109,7 @@ final class PersonProfileViewModelTests: XCTestCase {
     func testSupersededResponseCannotReplaceNewerRetry() async {
         let repository = ProfileRepositoryFake(plans: [
             .result(delay: .milliseconds(80), result: RepositoryResult(Self.profile(name: "Old"))),
-            .result(delay: .zero, result: RepositoryResult(Self.profile(name: "New")))
+            .result(delay: .zero, result: RepositoryResult(Self.profile(name: "New"))),
         ])
         let viewModel = makeViewModel(repository: repository)
         let firstLoad = Task { await viewModel.load() }
@@ -113,7 +118,7 @@ final class PersonProfileViewModelTests: XCTestCase {
         await viewModel.load()
         await firstLoad.value
 
-        guard case let .content(profile, _, _) = viewModel.state else {
+        guard case .content(let profile, _, _) = viewModel.state else {
             return XCTFail("Expected the newer retry result")
         }
         XCTAssertEqual(profile.name, "New")
@@ -146,11 +151,13 @@ final class PersonProfileViewModelTests: XCTestCase {
             ),
             occupation: occupation,
             biography: "Biography",
-            relatives: [RelativeSummary(
-                id: PersonID(rawValue: "RELATIVE-1"), relationship: .spouse,
-                name: PersonName(given: "Ada", surname: "Whitcomb"),
-                birthYear: 1871, deathYear: nil
-            )]
+            relatives: [
+                RelativeSummary(
+                    id: PersonID(rawValue: "RELATIVE-1"), relationship: .spouse,
+                    name: PersonName(given: "Ada", surname: "Whitcomb"),
+                    birthYear: 1871, deathYear: nil
+                )
+            ]
         )
     }
 }
@@ -177,10 +184,10 @@ private final class ProfileRepositoryFake: PeopleRepository, @unchecked Sendable
             return plans[min(callCount, plans.count - 1)]
         }
         switch plan {
-        case let .result(delay, result):
+        case .result(let delay, let result):
             try await Task.sleep(for: delay)
             return result
-        case let .failure(error):
+        case .failure(let error):
             throw error
         }
     }

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import FamilySearch
 
 @MainActor
@@ -40,15 +41,16 @@ final class FoundationTests: XCTestCase {
             repository: PeopleRepositoryFake(result: RepositoryResult([]))
         )
         let staleViewModel = PeopleListViewModel(
-            repository: PeopleRepositoryFake(result: RepositoryResult(
-                [person], refreshIssue: .refreshFailed(message: "Offline")
-            ))
+            repository: PeopleRepositoryFake(
+                result: RepositoryResult(
+                    [person], refreshIssue: .refreshFailed(message: "Offline")
+                ))
         )
 
         await emptyViewModel.load()
         await staleViewModel.load()
 
-        guard case let .content(_, staleIsStale, staleNotice) = staleViewModel.state else {
+        guard case .content(_, let staleIsStale, let staleNotice) = staleViewModel.state else {
             return XCTFail("Expected stale content state")
         }
         XCTAssertEqual(emptyViewModel.state, .empty)
@@ -85,8 +87,8 @@ private struct PeopleRepositoryFake: PeopleRepository {
     }
 }
 
-private extension PersonSummary {
-    static func fixture() -> PersonSummary {
+extension PersonSummary {
+    fileprivate static func fixture() -> PersonSummary {
         PersonSummary(
             id: PersonID(rawValue: "L4RX-9FT"),
             name: PersonName(given: "Ezra", surname: "Whitcomb"),

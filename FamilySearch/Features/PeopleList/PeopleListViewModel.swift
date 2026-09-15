@@ -54,11 +54,13 @@ final class PeopleListViewModel {
 
     private func apply(_ result: RepositoryResult<[PersonSummary]>) {
         let notice = result.refreshIssue.map(Self.message(for:))
-        state = result.value.isEmpty
+        state =
+            result.value.isEmpty
             ? .empty
-            : .content(rows: result.value.map(Self.makeRow),
-                       isStale: result.refreshIssue != nil,
-                       notice: notice)
+            : .content(
+                rows: result.value.map(Self.makeRow),
+                isStale: result.refreshIssue != nil,
+                notice: notice)
     }
 
     private static func makeRow(from person: PersonSummary) -> PeopleListRowModel {
@@ -78,7 +80,7 @@ final class PeopleListViewModel {
 
     private static func message(for issue: RepositoryIssue) -> String {
         switch issue {
-        case let .refreshFailed(message): message
+        case .refreshFailed(let message): message
         }
     }
 }

@@ -29,7 +29,7 @@ enum PeopleRepositoryError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         switch self {
-        case let .notFound(id):
+        case .notFound(let id):
             "No saved or remote record was found for \(id.rawValue)."
         case .unavailable:
             "People could not be loaded. Check your connection and try again."

@@ -74,12 +74,13 @@ final class PersonProfileViewModel {
     private func map(_ result: RepositoryResult<PersonProfile>) -> State {
         let notice = result.refreshIssue.map { issue in
             switch issue {
-            case let .refreshFailed(message): message
+            case .refreshFailed(let message): message
             }
         }
-        return .content(profile: makePresentation(from: result.value),
-                        isStale: result.refreshIssue != nil,
-                        notice: notice)
+        return .content(
+            profile: makePresentation(from: result.value),
+            isStale: result.refreshIssue != nil,
+            notice: notice)
     }
 
     private func makePresentation(from profile: PersonProfile) -> PersonProfilePresentationModel {
@@ -87,8 +88,9 @@ final class PersonProfileViewModel {
             id: profile.id,
             name: profile.summary.name.fullName,
             portrait: profile.summary.portrait,
-            birth: LifeEventPresentationModel(date: profile.summary.birth.date,
-                                               place: profile.summary.birth.place),
+            birth: LifeEventPresentationModel(
+                date: profile.summary.birth.date,
+                place: profile.summary.birth.place),
             death: profile.summary.death.map {
                 LifeEventPresentationModel(date: $0.date, place: $0.place)
             },

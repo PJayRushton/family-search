@@ -10,8 +10,9 @@ actor FilePortraitStore: PortraitRepository {
     }
 
     static func applicationSupport(fileManager: FileManager = .default) throws -> FilePortraitStore {
-        let root = try fileManager.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                       appropriateFor: nil, create: true)
+        let root = try fileManager.url(
+            for: .applicationSupportDirectory, in: .userDomainMask,
+            appropriateFor: nil, create: true)
         return FilePortraitStore(directory: root.appending(path: "Portraits", directoryHint: .isDirectory))
     }
 

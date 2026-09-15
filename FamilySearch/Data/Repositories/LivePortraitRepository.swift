@@ -16,7 +16,8 @@ actor LivePortraitRepository: PortraitRepository {
         let remoteData = try await client.fetchData(from: portrait.remoteURL)
         try Task.checkCancellation()
         guard let source = CGImageSourceCreateWithData(remoteData as CFData, nil),
-              CGImageSourceCreateImageAtIndex(source, 0, nil) != nil else {
+            CGImageSourceCreateImageAtIndex(source, 0, nil) != nil
+        else {
             throw RecordsClientError.invalidResponse
         }
         try await store.save(remoteData, for: portrait)

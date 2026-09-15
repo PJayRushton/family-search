@@ -25,16 +25,18 @@ extension PersonEntity {
         guard hasFetchedProfile, let summary, let biography else { return nil }
         let mappedRelatives = relatives.compactMap(\.relative).sorted { $0.name.fullName < $1.name.fullName }
         guard mappedRelatives.count == relatives.count else { return nil }
-        return PersonProfile(summary: summary, occupation: occupation, biography: biography,
-                             relatives: mappedRelatives)
+        return PersonProfile(
+            summary: summary, occupation: occupation, biography: biography,
+            relatives: mappedRelatives)
     }
 }
 
-private extension RelativeEntity {
-    var relative: RelativeSummary? {
+extension RelativeEntity {
+    fileprivate var relative: RelativeSummary? {
         guard let relationship = Relationship(rawValue: relationship) else { return nil }
-        return RelativeSummary(id: PersonID(rawValue: personID), relationship: relationship,
-                               name: PersonName(given: givenName, surname: surname),
-                               birthYear: birthYear, deathYear: deathYear)
+        return RelativeSummary(
+            id: PersonID(rawValue: personID), relationship: relationship,
+            name: PersonName(given: givenName, surname: surname),
+            birthYear: birthYear, deathYear: deathYear)
     }
 }

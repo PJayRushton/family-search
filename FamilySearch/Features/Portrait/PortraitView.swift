@@ -10,7 +10,7 @@ struct PortraitView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case let .image(data):
+            case .image(let data):
                 if let image = UIImage(data: data) {
                     Image(uiImage: image).resizable().scaledToFill()
                 } else {

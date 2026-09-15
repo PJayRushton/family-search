@@ -1,0 +1,24 @@
+{
+  "updated": "2026-08-14",
+  "count": 2,
+  "persons": [
+    {
+      "id": "L4RX-9FT",
+      "name": { "given": "Ezra", "surname": "Whitcomb" },
+      "sex": "male",
+      "living": false,
+      "birth": { "date": "12 March 1868", "year": 1868, "place": "Nauvoo, Illinois" },
+      "death": { "date": "3 November 1941", "year": 1941, "place": "Ogden, Utah" },
+      "portraitUrl": "portraits/L4RX-9FT.jpg"
+    },
+    {
+      "id": "LIVE-123",
+      "name": { "given": "June", "surname": "Hart" },
+      "sex": "female",
+      "living": true,
+      "birth": { "date": "about 1980", "year": 1980, "place": "Denver, Colorado" },
+      "death": null,
+      "portraitUrl": null
+    }
+  ]
+}

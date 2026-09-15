@@ -16,7 +16,22 @@ final class FoundationTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.state, .content(people: [person], isStale: false, notice: nil))
+        XCTAssertEqual(
+            viewModel.state,
+            .content(
+                rows: [
+                    PeopleListRowModel(
+                        id: person.id,
+                        name: "Ezra Whitcomb",
+                        lifespan: "1868–1941",
+                        birthplace: "Nauvoo",
+                        portrait: nil
+                    )
+                ],
+                isStale: false,
+                notice: nil
+            )
+        )
     }
 }
 

@@ -1,6 +1,14 @@
 import Foundation
 import Observation
 
+struct PeopleListRowModel: Identifiable, Equatable {
+    let id: PersonID
+    let name: String
+    let lifespan: String
+    let birthplace: String
+    let portrait: PortraitReference?
+}
+
 @MainActor
 @Observable
 final class PeopleListViewModel {
@@ -8,7 +16,7 @@ final class PeopleListViewModel {
         case idle
         case loading
         case empty
-        case content(people: [PersonSummary], isStale: Bool, notice: String?)
+        case content(rows: [PeopleListRowModel], isStale: Bool, notice: String?)
         case failure(message: String)
     }
 
@@ -48,17 +56,27 @@ final class PeopleListViewModel {
     private func apply(_ snapshot: RepositorySnapshot<[PersonSummary]>) {
         switch snapshot {
         case let .fresh(people):
-            state = people.isEmpty ? .empty : .content(people: people, isStale: false, notice: nil)
+            state = people.isEmpty ? .empty : .content(rows: people.map(Self.makeRow), isStale: false, notice: nil)
         case let .cached(people):
-            state = people.isEmpty ? .loading : .content(people: people, isStale: true, notice: "Refreshing…")
+            state = people.isEmpty ? .loading : .content(rows: people.map(Self.makeRow), isStale: true, notice: "Refreshing…")
         case let .stale(people, issue):
             let notice = switch issue {
             case let .refreshFailed(message): message
             }
             state = people.isEmpty
                 ? .failure(message: notice)
-                : .content(people: people, isStale: true, notice: notice)
+                : .content(rows: people.map(Self.makeRow), isStale: true, notice: notice)
         }
+    }
+
+    private static func makeRow(from person: PersonSummary) -> PeopleListRowModel {
+        PeopleListRowModel(
+            id: person.id,
+            name: person.name.fullName,
+            lifespan: person.lifespan,
+            birthplace: person.birth.place,
+            portrait: person.portrait
+        )
     }
 
     private static func message(for error: Error) -> String {

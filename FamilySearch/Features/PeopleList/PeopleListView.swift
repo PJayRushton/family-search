@@ -22,11 +22,12 @@ struct PeopleListView: View {
             ProgressView("Loading people…")
         case .empty:
             ContentUnavailableView("No People", systemImage: "person.2", description: Text("There are no records to show."))
-        case let .content(people, isStale, notice):
-            List(people) { person in
+        case let .content(rows, isStale, notice):
+            List(rows) { row in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(person.name.fullName).font(.headline)
-                    Text(person.lifespan).foregroundStyle(.secondary)
+                    Text(row.name).font(.headline)
+                    Text(row.lifespan).foregroundStyle(.secondary)
+                    Text(row.birthplace).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .safeAreaInset(edge: .top) {

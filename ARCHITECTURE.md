@@ -14,11 +14,11 @@ Dependencies point inward toward domain types. A view knows its view model; a vi
 
 ### Views
 
-Views render exhaustive presentation states and forward user intent. They do not start URL requests, query SwiftData, map records, or own cache policy. Navigation carries a stable `PersonID`, never a DTO or managed entity.
+Every SwiftUI screen or component ends in `View`. Feature views receive their view model through an initializer and keep that injected instance stable with SwiftUI state ownership. Views render exhaustive presentation states and forward user intent. They do not start URL requests, query SwiftData, map records, format domain records for display, or own cache policy. Navigation carries a stable `PersonID`, never a DTO or managed entity.
 
 ### View models
 
-View models are `@MainActor` observable reference types. They translate repository snapshots into presentation state and own screen-scoped request lifetime. Each load receives a generation token; a cancelled or superseded request cannot replace newer state. Cancellation is not presented as a user-facing failure.
+Every feature view model ends in `ViewModel` and is visibly injected into its view. View models are `@MainActor` observable reference types. They translate repository snapshots into immutable presentation models and presentation state, handle user intents, and own screen-scoped request lifetime. Each load receives a generation token; a cancelled or superseded request cannot replace newer state. Cancellation is not presented as a user-facing failure.
 
 ### Domain
 

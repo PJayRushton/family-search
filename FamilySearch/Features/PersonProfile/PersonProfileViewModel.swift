@@ -50,6 +50,9 @@ final class PersonProfileViewModel {
     }
 
     func load() async {
+        // Returning from a relative can restart the view task; keep the profile already on screen.
+        if case .content = state { return }
+
         loadGeneration += 1
         let generation = loadGeneration
         state = .loading

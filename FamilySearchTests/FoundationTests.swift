@@ -33,6 +33,48 @@ final class FoundationTests: XCTestCase {
             )
         )
     }
+
+    func testViewModelDistinguishesCachedEmptyAndStaleStates() async {
+        let person = PersonSummary.fixture()
+        let cachedViewModel = PeopleListViewModel(
+            repository: PeopleRepositoryFake(snapshots: [.cached([person])])
+        )
+        let emptyViewModel = PeopleListViewModel(
+            repository: PeopleRepositoryFake(snapshots: [.fresh([])])
+        )
+        let staleViewModel = PeopleListViewModel(
+            repository: PeopleRepositoryFake(
+                snapshots: [.stale([person], .refreshFailed(message: "Offline"))]
+            )
+        )
+
+        await cachedViewModel.load()
+        await emptyViewModel.load()
+        await staleViewModel.load()
+
+        guard case let .content(_, cachedIsStale, cachedNotice) = cachedViewModel.state,
+              case let .content(_, staleIsStale, staleNotice) = staleViewModel.state else {
+            return XCTFail("Expected cached and stale content states")
+        }
+        XCTAssertTrue(cachedIsStale)
+        XCTAssertEqual(cachedNotice, "Refreshing…")
+        XCTAssertEqual(emptyViewModel.state, .empty)
+        XCTAssertTrue(staleIsStale)
+        XCTAssertEqual(staleNotice, "Offline")
+    }
+
+    func testViewModelExposesNavigationIntentAsPersonID() {
+        let viewModel = PeopleListViewModel(
+            repository: PeopleRepositoryFake(snapshots: [])
+        )
+        let id = PersonID(rawValue: "L4RX-9FT")
+
+        viewModel.selectPerson(id: id)
+
+        XCTAssertEqual(viewModel.selectedPersonID, id)
+        viewModel.clearSelection()
+        XCTAssertNil(viewModel.selectedPersonID)
+    }
 }
 
 private struct PeopleRepositoryFake: PeopleRepository {

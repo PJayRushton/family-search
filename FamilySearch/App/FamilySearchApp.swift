@@ -8,7 +8,6 @@ struct FamilySearchApp: App {
 
     init() {
         do {
-            let store = try SwiftDataPeopleStore.makePersistent()
             let recordsClient: any RecordsClient
             #if DEBUG
                 // Makes force-quit/offline acceptance testing deterministic without changing Mac networking.
@@ -20,7 +19,7 @@ struct FamilySearchApp: App {
                 recordsClient = URLSessionRecordsClient()
             #endif
 
-            peopleRepository = LivePeopleRepository(recordsClient: recordsClient, store: store)
+            peopleRepository = try LivePeopleRepository.makePersistent(recordsClient: recordsClient)
             portraitRepository = LivePortraitRepository(
                 client: URLSessionPortraitClient(),
                 store: try FilePortraitStore.applicationSupport()

@@ -6,14 +6,10 @@ import XCTest
 @MainActor
 final class LiveRepositoryTests: XCTestCase {
     func testPeoplePersistsAndRereadsRemoteRecords() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
-        let cached = Self.person(id: "CACHED", given: "Beth", surname: "Cache")
-        try await store.upsert(summaries: [cached])
         let zulu = Self.person(id: "Z", given: "Zoe", surname: "Zulu")
         let alpha = Self.person(id: "A", given: "Amy", surname: "Alpha")
-        let repository = LivePeopleRepository(
-            recordsClient: RecordsClientFake(peopleResult: .success([zulu, alpha])),
-            store: store
+        let repository = try LivePeopleRepository.makeInMemory(
+            recordsClient: RecordsClientFake(peopleResult: .success([zulu, alpha]))
         )
 
         let result = try await repository.loadPeople()
@@ -21,18 +17,17 @@ final class LiveRepositoryTests: XCTestCase {
         XCTAssertNil(result.refreshIssue)
         // SwiftData applies its surname sort, proving network values did not bypass the store.
         XCTAssertEqual(result.value.map(\.id), [alpha.id, zulu.id])
-        let storedAlpha = try await store.summary(id: alpha.id)
+        let storedAlpha = try await repository.summary(id: alpha.id)
         XCTAssertEqual(storedAlpha, alpha)
     }
 
     func testPeopleReturnsSavedDataWhenRefreshFails() async throws {
-        let store = try SwiftDataPeopleStore.makeInMemory()
         let cached = Self.person(id: "CACHED", given: "Beth", surname: "Cache")
-        try await store.upsert(summaries: [cached])
-        let repository = LivePeopleRepository(
-            recordsClient: RecordsClientFake(peopleResult: .failure(TestError.offline)),
-            store: store
+        let repository = try LivePeopleRepository.makeInMemory(
+            recordsClient: RecordsClientFake(peopleResult: .failure(TestError.offline))
         )
+
+        try await repository.upsert(summaries: [cached])
 
         let result = try await repository.loadPeople()
 
@@ -41,10 +36,8 @@ final class LiveRepositoryTests: XCTestCase {
     }
 
     func testPeopleThrowsOnFirstLaunchWhenRefreshFails() async {
-        let store = try! SwiftDataPeopleStore.makeInMemory()
-        let repository = LivePeopleRepository(
-            recordsClient: RecordsClientFake(peopleResult: .failure(TestError.offline)),
-            store: store
+        let repository = try! LivePeopleRepository.makeInMemory(
+            recordsClient: RecordsClientFake(peopleResult: .failure(TestError.offline))
         )
 
         do {

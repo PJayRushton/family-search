@@ -38,7 +38,7 @@ Network values never bypass persistence on their way to the UI, so SwiftData rem
 
 ### SwiftData persistence
 
-SwiftData provides a real schema-backed store without adding setup or a dependency. A `@ModelActor` owns every `ModelContext` operation, and person lookups use a store predicate plus `fetchLimit = 1`, rather than reading the collection and scanning it in memory.
+SwiftData provides a real schema-backed store without adding setup or a dependency. The concrete people repository is a `@ModelActor`, so it owns every `ModelContext` operation; person lookups use a predicate plus `fetchLimit = 1` rather than reading and scanning the whole collection.
 
 List membership is stored separately from profile completeness. That lets a profile-only relative remain cached and directly queryable without leaking into the root list. A list refresh replaces membership while preserving already-fetched profile fields and relatives.
 

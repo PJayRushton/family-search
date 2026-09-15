@@ -6,8 +6,7 @@ enum PreviewContainer {
     static func populated() -> AppContainer {
         do {
             let store = try SwiftDataPeopleStore.makeInMemory()
-            try store.upsert(profile: sampleProfile)
-            return AppContainer(peopleRepository: StoredPeopleRepository(store: store),
+            return AppContainer(peopleRepository: StoredPeopleRepository(store: store, seedProfiles: [sampleProfile]),
                                 portraitRepository: PreviewPortraitRepository())
         } catch { preconditionFailure("Preview persistence failed: \(error)") }
     }

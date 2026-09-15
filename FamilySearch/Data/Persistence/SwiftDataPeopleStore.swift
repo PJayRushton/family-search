@@ -1,26 +1,21 @@
 import Foundation
-@preconcurrency import SwiftData
+import SwiftData
 
 /// Owns all SwiftData access. Callers exchange domain values, never persistence entities.
-@MainActor
-final class SwiftDataPeopleStore {
-    private let modelContainer: ModelContainer
-    private var context: ModelContext { modelContainer.mainContext }
-
-    init(modelContainer: ModelContainer) { self.modelContainer = modelContainer }
-
-    static func makePersistent() throws -> SwiftDataPeopleStore {
+@ModelActor
+actor SwiftDataPeopleStore {
+    nonisolated static func makePersistent() throws -> SwiftDataPeopleStore {
         try SwiftDataPeopleStore(modelContainer: ModelContainer(for: PersonEntity.self, RelativeEntity.self))
     }
 
-    static func makePersistent(at url: URL) throws -> SwiftDataPeopleStore {
+    nonisolated static func makePersistent(at url: URL) throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(url: url)
         return try SwiftDataPeopleStore(modelContainer: ModelContainer(
             for: PersonEntity.self, RelativeEntity.self, configurations: configuration
         ))
     }
 
-    static func makeInMemory() throws -> SwiftDataPeopleStore {
+    nonisolated static func makeInMemory() throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try SwiftDataPeopleStore(modelContainer: ModelContainer(
             for: PersonEntity.self, RelativeEntity.self, configurations: configuration
@@ -31,7 +26,7 @@ final class SwiftDataPeopleStore {
         let descriptor = FetchDescriptor<PersonEntity>(
             sortBy: [SortDescriptor(\PersonEntity.surname), SortDescriptor(\PersonEntity.givenName)]
         )
-        return try context.fetch(descriptor).compactMap(\.summary)
+        return try modelContext.fetch(descriptor).compactMap(\.summary)
     }
 
     /// The predicate becomes a store query; this does not load and scan the people table.
@@ -41,9 +36,9 @@ final class SwiftDataPeopleStore {
     func upsert(summaries: [PersonSummary]) throws {
         for summary in summaries {
             if let existing = try entity(id: summary.id) { apply(summary, to: existing) }
-            else { context.insert(makeEntity(from: summary)) }
+            else { modelContext.insert(makeEntity(from: summary)) }
         }
-        try context.save()
+        try modelContext.save()
     }
 
     func upsert(profile: PersonProfile) throws {
@@ -51,24 +46,24 @@ final class SwiftDataPeopleStore {
         if let existing = try entity(id: profile.id) {
             record = existing
             apply(profile.summary, to: record)
-            record.relatives.forEach(context.delete)
+            record.relatives.forEach(modelContext.delete)
             record.relatives.removeAll()
         } else {
             record = makeEntity(from: profile.summary)
-            context.insert(record)
+            modelContext.insert(record)
         }
         record.occupation = profile.occupation
         record.biography = profile.biography
         record.hasFetchedProfile = true
         record.relatives = profile.relatives.map(makeEntity(from:))
-        try context.save()
+        try modelContext.save()
     }
 
     private func entity(id: PersonID) throws -> PersonEntity? {
         let rawID = id.rawValue
         var descriptor = FetchDescriptor<PersonEntity>(predicate: #Predicate { $0.personID == rawID })
         descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        return try modelContext.fetch(descriptor).first
     }
 
     private func makeEntity(from summary: PersonSummary) -> PersonEntity {
@@ -103,30 +98,54 @@ final class SwiftDataPeopleStore {
 }
 
 /// Local-only repository for previews and the stored-data half of the live repository.
-@MainActor
-final class StoredPeopleRepository: PeopleRepository {
+struct StoredPeopleRepository: PeopleRepository {
     private let store: SwiftDataPeopleStore
-    init(store: SwiftDataPeopleStore) { self.store = store }
+    private let seedProfiles: [PersonProfile]
 
-    nonisolated func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
+    init(store: SwiftDataPeopleStore, seedProfiles: [PersonProfile] = []) {
+        self.store = store
+        self.seedProfiles = seedProfiles
+    }
+
+    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
         AsyncThrowingStream { continuation in
-            Task { @MainActor [store] in
-                do { continuation.yield(.cached(try store.summaries())); continuation.finish() }
-                catch { continuation.finish(throwing: error) }
+            let producer = Task {
+                do {
+                    try await seedIfNeeded()
+                    guard !Task.isCancelled else { return }
+                    continuation.yield(.cached(try await store.summaries()))
+                    continuation.finish()
+                } catch is CancellationError {
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
             }
+            continuation.onTermination = { _ in producer.cancel() }
         }
     }
 
-    nonisolated func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
+    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
         AsyncThrowingStream { continuation in
-            Task { @MainActor [store] in
+            let producer = Task {
                 do {
-                    guard let profile = try store.profile(id: id) else {
+                    try await seedIfNeeded()
+                    guard !Task.isCancelled else { return }
+                    guard let profile = try await store.profile(id: id) else {
                         continuation.finish(throwing: PeopleRepositoryError.notFound(id)); return
                     }
                     continuation.yield(.cached(profile)); continuation.finish()
-                } catch { continuation.finish(throwing: error) }
+                } catch is CancellationError {
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
             }
+            continuation.onTermination = { _ in producer.cancel() }
         }
+    }
+
+    private func seedIfNeeded() async throws {
+        for profile in seedProfiles { try await store.upsert(profile: profile) }
     }
 }

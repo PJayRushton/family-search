@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import SwiftData
+import SwiftData
 
 @Model
 final class PersonEntity {

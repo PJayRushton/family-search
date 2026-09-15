@@ -4,18 +4,21 @@ import XCTest
 
 @MainActor
 final class SwiftDataPeopleStoreTests: XCTestCase {
-    func testSummaryUpsertAndDirectLookupRoundTripNullableFields() throws {
+    func testSummaryUpsertAndDirectLookupRoundTripNullableFields() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let summary = Self.summary(death: nil, portrait: Self.portrait)
 
-        try store.upsert(summaries: [summary])
+        try await store.upsert(summaries: [summary])
 
-        XCTAssertEqual(try store.summary(id: summary.id), summary)
-        XCTAssertEqual(try store.summaries(), [summary])
-        XCTAssertNil(try store.profile(id: summary.id))
+        let storedSummary = try await store.summary(id: summary.id)
+        let summaries = try await store.summaries()
+        let profile = try await store.profile(id: summary.id)
+        XCTAssertEqual(storedSummary, summary)
+        XCTAssertEqual(summaries, [summary])
+        XCTAssertNil(profile)
     }
 
-    func testProfilePersistsRelativesAndNullableOccupation() throws {
+    func testProfilePersistsRelativesAndNullableOccupation() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let profile = PersonProfile(
             summary: Self.summary(death: Self.death, portrait: Self.portrait),
@@ -24,27 +27,29 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
             relatives: [Self.relative]
         )
 
-        try store.upsert(profile: profile)
+        try await store.upsert(profile: profile)
 
-        XCTAssertEqual(try store.profile(id: profile.id), profile)
+        let storedProfile = try await store.profile(id: profile.id)
+        XCTAssertEqual(storedProfile, profile)
     }
 
-    func testSummaryRefreshDoesNotEraseFetchedProfileFields() throws {
+    func testSummaryRefreshDoesNotEraseFetchedProfileFields() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let profile = PersonProfile(
             summary: Self.summary(), occupation: "Carpenter", biography: "Biography",
             relatives: [Self.relative]
         )
-        try store.upsert(profile: profile)
+        try await store.upsert(profile: profile)
 
         let renamedSummary = PersonSummary(
             id: profile.id, name: PersonName(given: "Ezra", surname: "Whitcomb-Smith"),
             isLiving: false, birth: profile.summary.birth, death: profile.summary.death,
             portrait: profile.summary.portrait
         )
-        try store.upsert(summaries: [renamedSummary])
+        try await store.upsert(summaries: [renamedSummary])
 
-        let refreshed = try XCTUnwrap(store.profile(id: profile.id))
+        let fetchedProfile = try await store.profile(id: profile.id)
+        let refreshed = try XCTUnwrap(fetchedProfile)
         XCTAssertEqual(refreshed.summary, renamedSummary)
         XCTAssertEqual(refreshed.occupation, profile.occupation)
         XCTAssertEqual(refreshed.biography, profile.biography)
@@ -63,7 +68,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
         XCTAssertEqual(people.first?.name.fullName, "Ezra Whitcomb")
     }
 
-    func testProfileSurvivesReopeningDiskStore() throws {
+    func testProfileSurvivesReopeningDiskStore() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -74,10 +79,12 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
             relatives: [Self.relative]
         )
 
-        try SwiftDataPeopleStore.makePersistent(at: databaseURL).upsert(profile: profile)
+        let originalStore = try SwiftDataPeopleStore.makePersistent(at: databaseURL)
+        try await originalStore.upsert(profile: profile)
         let reopenedStore = try SwiftDataPeopleStore.makePersistent(at: databaseURL)
 
-        XCTAssertEqual(try reopenedStore.profile(id: profile.id), profile)
+        let reopenedProfile = try await reopenedStore.profile(id: profile.id)
+        XCTAssertEqual(reopenedProfile, profile)
     }
 
     private static let portrait = PortraitReference(

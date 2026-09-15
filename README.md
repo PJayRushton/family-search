@@ -73,7 +73,7 @@ None. SwiftUI, Observation, SwiftData, Foundation/URLSession, and UIKit cover th
 - Profile records have a fetched/not-fetched marker but no age or server-revision policy. A visited profile is refreshed whenever opened, then falls back to its saved copy.
 - Portrait files do not yet have size accounting or eviction. Invalid image bytes are rejected before caching.
 - Persistent-container creation is treated as an app invariant. A production app would surface store recovery or migration failure instead of terminating at composition time.
-- The UI prioritizes clarity and accessibility over custom visual polish, consistent with the exercise's time limit.
+- The UI prioritizes clarity and accessibility over custom visual polish.
 
 ## If the list were 100,000 people
 
@@ -83,6 +83,6 @@ The service contract would need pagination or incremental synchronization; the c
 
 I would add UI tests for the full online → force-quit → offline journey, store migration/recovery handling, portrait-cache eviction, Dynamic Type and VoiceOver passes, and lightweight request/refresh diagnostics. I would also add profile freshness metadata so refresh policy is explicit rather than always-on-open.
 
-## Time and process
+## Process
 
-The implementation took about two hours of active implementation time, within the four-hour ceiling; the commit timestamps also include breaks and later review follow-ups. I used an AI assistant as an issue-driven implementation partner: I wrote an epic and dependency-ordered child issues, reviewed each issue's PR into an integration branch, ran focused tests after each layer, then performed simulator QA and an adversarial architecture review. The commit and PR history is intentionally part of the submission—it records the decisions, parallel work, integration fixes, and QA evidence rather than presenting the app as a single unexplained code drop.
+I used an AI assistant as an issue-driven implementation partner: I wrote an epic and dependency-ordered child issues, reviewed each issue's PR into an integration branch, ran focused tests after each layer, then performed simulator QA and an adversarial architecture review. The commit and PR history is intentionally part of the submission—it records the decisions, parallel work, integration fixes, and QA evidence rather than presenting the app as a single unexplained code drop.

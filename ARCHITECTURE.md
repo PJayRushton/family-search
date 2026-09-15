@@ -48,7 +48,7 @@ Views that display records include previews built through the same view-model in
 
 ## Deliberate tradeoffs
 
-The app uses one app target rather than separate framework modules because the dependency rules are testable without adding build complexity to a four-hour exercise. Protocol seams preserve the option to extract modules later. SwiftData is planned for proportionate, schema-backed storage with no third-party setup; the repository prevents that choice from leaking into features.
+The app uses one app target rather than separate framework modules because the dependency rules are testable without adding unnecessary build complexity. Protocol seams preserve the option to extract modules later. SwiftData provides proportionate, schema-backed storage with no third-party setup; the repository prevents that choice from leaking into features.
 
 ## Readability
 

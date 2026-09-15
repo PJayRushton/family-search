@@ -4,29 +4,13 @@ import XCTest
 
 @MainActor
 final class PersonProfileViewModelTests: XCTestCase {
-    func testCachedProfileIsShownBeforeFreshProfile() async {
-        let cached = Self.profile(name: "Cached Ezra")
-        let fresh = Self.profile(name: "Fresh Ezra")
+    func testProfileMapsRepositoryResult() async {
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([
-                .init(delay: .zero, snapshot: .cached(cached)),
-                .init(delay: .milliseconds(80), snapshot: .fresh(fresh))
-            ])
+            .result(delay: .zero, result: RepositoryResult(Self.profile(name: "Fresh Ezra")))
         ])
         let viewModel = makeViewModel(repository: repository)
 
-        let load = Task { await viewModel.load() }
-        try? await Task.sleep(for: .milliseconds(10))
-
-        guard case let .content(profile, isStale, notice) = viewModel.state else {
-            load.cancel()
-            return XCTFail("Expected cached content while refresh was pending")
-        }
-        XCTAssertEqual(profile.name, "Cached Ezra")
-        XCTAssertTrue(isStale)
-        XCTAssertEqual(notice, "Refreshing…")
-
-        await load.value
+        await viewModel.load()
         guard case let .content(profile, isStale, notice) = viewModel.state else {
             return XCTFail("Expected fresh content")
         }
@@ -35,11 +19,11 @@ final class PersonProfileViewModelTests: XCTestCase {
         XCTAssertNil(notice)
     }
 
-    func testStaleSnapshotKeepsCachedProfileAndExplainsRefreshFailure() async {
+    func testStaleResultKeepsCachedProfileAndExplainsRefreshFailure() async {
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([.init(delay: .zero, snapshot: .stale(
-                Self.profile(), .refreshFailed(message: "Offline")
-            ))])
+            .result(delay: .zero, result: RepositoryResult(
+                Self.profile(), refreshIssue: .refreshFailed(message: "Offline")
+            ))
         ])
         let viewModel = makeViewModel(repository: repository)
 
@@ -55,7 +39,7 @@ final class PersonProfileViewModelTests: XCTestCase {
     func testNoCacheFailureThenRetrySucceeds() async {
         let repository = ProfileRepositoryFake(plans: [
             .failure(.unavailable),
-            .snapshots([.init(delay: .zero, snapshot: .fresh(Self.profile()))])
+            .result(delay: .zero, result: RepositoryResult(Self.profile()))
         ])
         let viewModel = makeViewModel(repository: repository)
 
@@ -69,7 +53,7 @@ final class PersonProfileViewModelTests: XCTestCase {
     func testLivingProfileOmitsDeathAndMissingOccupation() async {
         let living = Self.profile(isLiving: true, death: nil, occupation: nil)
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([.init(delay: .zero, snapshot: .fresh(living))])
+            .result(delay: .zero, result: RepositoryResult(living))
         ])
         let viewModel = makeViewModel(repository: repository)
 
@@ -85,7 +69,7 @@ final class PersonProfileViewModelTests: XCTestCase {
 
     func testRelativeRowsPreserveStableIdentityOnly() async {
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([.init(delay: .zero, snapshot: .fresh(Self.profile()))])
+            .result(delay: .zero, result: RepositoryResult(Self.profile()))
         ])
         let viewModel = makeViewModel(repository: repository)
 
@@ -105,7 +89,7 @@ final class PersonProfileViewModelTests: XCTestCase {
 
     func testCancellationDoesNotBecomeFailure() async {
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([.init(delay: .milliseconds(100), snapshot: .fresh(Self.profile()))])
+            .result(delay: .milliseconds(100), result: RepositoryResult(Self.profile()))
         ])
         let viewModel = makeViewModel(repository: repository)
         let load = Task { await viewModel.load() }
@@ -119,8 +103,8 @@ final class PersonProfileViewModelTests: XCTestCase {
 
     func testSupersededResponseCannotReplaceNewerRetry() async {
         let repository = ProfileRepositoryFake(plans: [
-            .snapshots([.init(delay: .milliseconds(80), snapshot: .fresh(Self.profile(name: "Old")))]),
-            .snapshots([.init(delay: .zero, snapshot: .fresh(Self.profile(name: "New")))])
+            .result(delay: .milliseconds(80), result: RepositoryResult(Self.profile(name: "Old"))),
+            .result(delay: .zero, result: RepositoryResult(Self.profile(name: "New")))
         ])
         let viewModel = makeViewModel(repository: repository)
         let firstLoad = Task { await viewModel.load() }
@@ -172,13 +156,8 @@ final class PersonProfileViewModelTests: XCTestCase {
 }
 
 private final class ProfileRepositoryFake: PeopleRepository, @unchecked Sendable {
-    struct TimedSnapshot: Sendable {
-        let delay: Duration
-        let snapshot: RepositorySnapshot<PersonProfile>
-    }
-
     enum Plan: Sendable {
-        case snapshots([TimedSnapshot])
+        case result(delay: Duration, result: RepositoryResult<PersonProfile>)
         case failure(PeopleRepositoryError)
     }
 
@@ -188,35 +167,21 @@ private final class ProfileRepositoryFake: PeopleRepository, @unchecked Sendable
 
     init(plans: [Plan]) { self.plans = plans }
 
-    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
-        AsyncThrowingStream { $0.finish() }
+    func loadPeople() async throws -> RepositoryResult<[PersonSummary]> {
+        throw PeopleRepositoryError.unavailable
     }
 
-    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
+    func loadProfile(id: PersonID) async throws -> RepositoryResult<PersonProfile> {
         let plan = lock.withLock {
             defer { callCount += 1 }
             return plans[min(callCount, plans.count - 1)]
         }
-        return AsyncThrowingStream { continuation in
-            let producer = Task {
-                do {
-                    switch plan {
-                    case let .snapshots(events):
-                        for event in events {
-                            try await Task.sleep(for: event.delay)
-                            continuation.yield(event.snapshot)
-                        }
-                        continuation.finish()
-                    case let .failure(error):
-                        continuation.finish(throwing: error)
-                    }
-                } catch is CancellationError {
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in producer.cancel() }
+        switch plan {
+        case let .result(delay, result):
+            try await Task.sleep(for: delay)
+            return result
+        case let .failure(error):
+            throw error
         }
     }
 }

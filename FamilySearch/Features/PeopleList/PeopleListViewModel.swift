@@ -36,11 +36,10 @@ final class PeopleListViewModel {
         state = .loading
 
         do {
-            for try await snapshot in repository.people() {
-                try Task.checkCancellation()
-                guard generation == loadGeneration else { return }
-                apply(snapshot)
-            }
+            let result = try await repository.loadPeople()
+            try Task.checkCancellation()
+            guard generation == loadGeneration else { return }
+            apply(result)
         } catch is CancellationError {
             return
         } catch {
@@ -53,20 +52,13 @@ final class PeopleListViewModel {
         loadGeneration += 1
     }
 
-    private func apply(_ snapshot: RepositorySnapshot<[PersonSummary]>) {
-        switch snapshot {
-        case let .fresh(people):
-            state = people.isEmpty ? .empty : .content(rows: people.map(Self.makeRow), isStale: false, notice: nil)
-        case let .cached(people):
-            state = people.isEmpty ? .loading : .content(rows: people.map(Self.makeRow), isStale: true, notice: "Refreshing…")
-        case let .stale(people, issue):
-            let notice = switch issue {
-            case let .refreshFailed(message): message
-            }
-            state = people.isEmpty
-                ? .failure(message: notice)
-                : .content(rows: people.map(Self.makeRow), isStale: true, notice: notice)
-        }
+    private func apply(_ result: RepositoryResult<[PersonSummary]>) {
+        let notice = result.refreshIssue.map(Self.message(for:))
+        state = result.value.isEmpty
+            ? .empty
+            : .content(rows: result.value.map(Self.makeRow),
+                       isStale: result.refreshIssue != nil,
+                       notice: notice)
     }
 
     private static func makeRow(from person: PersonSummary) -> PeopleListRowModel {
@@ -82,5 +74,11 @@ final class PeopleListViewModel {
     private static func message(for error: Error) -> String {
         (error as? LocalizedError)?.errorDescription
             ?? "Something went wrong. Please try again."
+    }
+
+    private static func message(for issue: RepositoryIssue) -> String {
+        switch issue {
+        case let .refreshFailed(message): message
+        }
     }
 }

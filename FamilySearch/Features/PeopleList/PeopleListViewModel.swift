@@ -15,6 +15,7 @@ final class PeopleListViewModel {
     private(set) var state: State = .idle
 
     private let repository: any PeopleRepository
+    // A retry supersedes earlier work even if an underlying dependency ignores cancellation.
     private var loadGeneration = 0
 
     init(repository: any PeopleRepository) {

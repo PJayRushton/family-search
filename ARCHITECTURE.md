@@ -43,3 +43,7 @@ The concrete repository owns remote/cache selection. Transport DTOs mirror JSON 
 ## Deliberate tradeoffs
 
 The app uses one app target rather than separate framework modules because the dependency rules are testable without adding build complexity to a four-hour exercise. Protocol seams preserve the option to extract modules later. SwiftData is planned for proportionate, schema-backed storage with no third-party setup; the repository prevents that choice from leaking into features.
+
+## Readability
+
+The code favors concrete names, small types, and direct control flow over clever abstractions. Comments explain architectural boundaries or decisions that are easy to misread—such as why repositories stream snapshots and why loads carry a generation—but do not narrate ordinary Swift syntax. This keeps the implementation practical to review and walk through.

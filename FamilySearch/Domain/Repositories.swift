@@ -4,6 +4,7 @@ enum RepositoryIssue: Hashable, Sendable {
     case refreshFailed(message: String)
 }
 
+/// Lets a repository publish saved data first, then replace or annotate it after refresh.
 enum RepositorySnapshot<Value: Sendable>: Sendable {
     case cached(Value)
     case fresh(Value)
@@ -11,6 +12,7 @@ enum RepositorySnapshot<Value: Sendable>: Sendable {
 }
 
 protocol PeopleRepository: Sendable {
+    /// Cache/network policy stays here so view models never coordinate data sources.
     func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error>
     func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error>
 }

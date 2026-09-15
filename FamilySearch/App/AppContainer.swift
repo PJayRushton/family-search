@@ -5,36 +5,21 @@ struct AppContainer {
     let peopleRepository: any PeopleRepository
     let portraitRepository: any PortraitRepository
 
+    @MainActor
     static func live() -> AppContainer {
-        AppContainer(
-            peopleRepository: BootstrapPeopleRepository(),
-            portraitRepository: BootstrapPortraitRepository()
-        )
+        do {
+            let store = try SwiftDataPeopleStore.makePersistent()
+            return AppContainer(
+                peopleRepository: StoredPeopleRepository(store: store),
+                portraitRepository: try FilePortraitStore.applicationSupport()
+            )
+        } catch {
+            preconditionFailure("The persistent app container could not be created: \(error)")
+        }
     }
 
     @MainActor
     func makePeopleListViewModel() -> PeopleListViewModel {
         PeopleListViewModel(repository: peopleRepository)
-    }
-}
-
-private struct BootstrapPeopleRepository: PeopleRepository {
-    func people() -> AsyncThrowingStream<RepositorySnapshot<[PersonSummary]>, Error> {
-        AsyncThrowingStream { continuation in
-            continuation.yield(.fresh([]))
-            continuation.finish()
-        }
-    }
-
-    func profile(id: PersonID) -> AsyncThrowingStream<RepositorySnapshot<PersonProfile>, Error> {
-        AsyncThrowingStream { continuation in
-            continuation.finish(throwing: PeopleRepositoryError.notFound(id))
-        }
-    }
-}
-
-private struct BootstrapPortraitRepository: PortraitRepository {
-    func data(for portrait: PortraitReference) async throws -> Data? {
-        nil
     }
 }

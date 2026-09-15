@@ -9,9 +9,16 @@ struct AppContainer {
     static func live() -> AppContainer {
         do {
             let store = try SwiftDataPeopleStore.makePersistent()
+            let portraitStore = try FilePortraitStore.applicationSupport()
             return AppContainer(
-                peopleRepository: StoredPeopleRepository(store: store),
-                portraitRepository: try FilePortraitStore.applicationSupport()
+                peopleRepository: LivePeopleRepository(
+                    recordsClient: URLSessionRecordsClient(),
+                    store: store
+                ),
+                portraitRepository: LivePortraitRepository(
+                    client: URLSessionPortraitClient(),
+                    store: portraitStore
+                )
             )
         } catch {
             preconditionFailure("The persistent app container could not be created: \(error)")
@@ -27,8 +34,12 @@ struct AppContainer {
     func makePersonProfileViewModel(id: PersonID) -> PersonProfileViewModel {
         PersonProfileViewModel(
             personID: id,
-            repository: peopleRepository,
-            portraitRepository: portraitRepository
+            repository: peopleRepository
         )
+    }
+
+    @MainActor
+    func makePortraitViewModel(portrait: PortraitReference?) -> PortraitViewModel {
+        PortraitViewModel(portrait: portrait, repository: portraitRepository)
     }
 }

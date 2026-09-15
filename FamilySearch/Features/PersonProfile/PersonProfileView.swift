@@ -1,12 +1,17 @@
 import SwiftUI
-import UIKit
 
 struct PersonProfileView: View {
     @State private var viewModel: PersonProfileViewModel
+    private let makePortraitViewModel: (PortraitReference?) -> PortraitViewModel
     private let onSelectRelative: (PersonID) -> Void
 
-    init(viewModel: PersonProfileViewModel, onSelectRelative: @escaping (PersonID) -> Void) {
+    init(
+        viewModel: PersonProfileViewModel,
+        makePortraitViewModel: @escaping (PortraitReference?) -> PortraitViewModel,
+        onSelectRelative: @escaping (PersonID) -> Void
+    ) {
         _viewModel = State(initialValue: viewModel)
+        self.makePortraitViewModel = makePortraitViewModel
         self.onSelectRelative = onSelectRelative
     }
 
@@ -58,14 +63,7 @@ struct PersonProfileView: View {
 
     private func header(_ profile: PersonProfilePresentationModel) -> some View {
         VStack(spacing: 12) {
-            Group {
-                if let data = profile.portraitData, let image = UIImage(data: data) {
-                    Image(uiImage: image).resizable().scaledToFill()
-                } else {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable().scaledToFit().foregroundStyle(.secondary)
-                }
-            }
+            PortraitView(viewModel: makePortraitViewModel(profile.portrait))
             .frame(width: 150, height: 150)
             .clipShape(Circle())
             .accessibilityLabel("Portrait of \(profile.name)")
@@ -129,6 +127,7 @@ struct PersonProfileView: View {
     NavigationStack {
         PersonProfileView(
             viewModel: container.makePersonProfileViewModel(id: PreviewContainer.profileID),
+            makePortraitViewModel: container.makePortraitViewModel,
             onSelectRelative: { _ in }
         )
     }
@@ -139,6 +138,7 @@ struct PersonProfileView: View {
     NavigationStack {
         PersonProfileView(
             viewModel: container.makePersonProfileViewModel(id: PreviewContainer.livingProfileID),
+            makePortraitViewModel: container.makePortraitViewModel,
             onSelectRelative: { _ in }
         )
     }

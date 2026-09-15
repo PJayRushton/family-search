@@ -80,6 +80,7 @@ final class PersonProfileViewModelTests: XCTestCase {
         }
         XCTAssertNil(profile.death)
         XCTAssertNil(profile.occupation)
+        XCTAssertEqual(profile.portrait?.key, "portrait")
     }
 
     func testRelativeRowsPreserveStableIdentityOnly() async {
@@ -137,8 +138,7 @@ final class PersonProfileViewModelTests: XCTestCase {
     private func makeViewModel(repository: ProfileRepositoryFake) -> PersonProfileViewModel {
         PersonProfileViewModel(
             personID: Self.id,
-            repository: repository,
-            portraitRepository: PortraitRepositoryFake(data: Data([1, 2, 3]))
+            repository: repository
         )
     }
 
@@ -169,11 +169,6 @@ final class PersonProfileViewModelTests: XCTestCase {
             )]
         )
     }
-}
-
-private struct PortraitRepositoryFake: PortraitRepository {
-    let data: Data?
-    func data(for portrait: PortraitReference) async throws -> Data? { data }
 }
 
 private final class ProfileRepositoryFake: PeopleRepository, @unchecked Sendable {

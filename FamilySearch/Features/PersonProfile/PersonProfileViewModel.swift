@@ -16,7 +16,7 @@ struct RelativeRowPresentationModel: Identifiable, Equatable {
 struct PersonProfilePresentationModel: Identifiable, Equatable {
     let id: PersonID
     let name: String
-    let portraitData: Data?
+    let portrait: PortraitReference?
     let birth: LifeEventPresentationModel
     let death: LifeEventPresentationModel?
     let occupation: String?
@@ -38,18 +38,15 @@ final class PersonProfileViewModel {
     let personID: PersonID
 
     private let repository: any PeopleRepository
-    private let portraitRepository: any PortraitRepository
     // Each destination owns a generation so late work cannot update a newer retry.
     private var loadGeneration = 0
 
     init(
         personID: PersonID,
-        repository: any PeopleRepository,
-        portraitRepository: any PortraitRepository
+        repository: any PeopleRepository
     ) {
         self.personID = personID
         self.repository = repository
-        self.portraitRepository = portraitRepository
     }
 
     func load() async {
@@ -60,7 +57,7 @@ final class PersonProfileViewModel {
         do {
             for try await snapshot in repository.profile(id: personID) {
                 try Task.checkCancellation()
-                let mapped = await map(snapshot)
+                let mapped = map(snapshot)
                 try Task.checkCancellation()
                 guard generation == loadGeneration else { return }
                 state = mapped
@@ -77,35 +74,28 @@ final class PersonProfileViewModel {
         loadGeneration += 1
     }
 
-    private func map(_ snapshot: RepositorySnapshot<PersonProfile>) async -> State {
+    private func map(_ snapshot: RepositorySnapshot<PersonProfile>) -> State {
         switch snapshot {
         case let .cached(profile):
-            return .content(profile: await makePresentation(from: profile),
+            return .content(profile: makePresentation(from: profile),
                             isStale: true, notice: "Refreshing…")
         case let .fresh(profile):
-            return .content(profile: await makePresentation(from: profile),
+            return .content(profile: makePresentation(from: profile),
                             isStale: false, notice: nil)
         case let .stale(profile, issue):
             let notice = switch issue {
             case let .refreshFailed(message): message
             }
-            return .content(profile: await makePresentation(from: profile),
+            return .content(profile: makePresentation(from: profile),
                             isStale: true, notice: notice)
         }
     }
 
-    private func makePresentation(from profile: PersonProfile) async -> PersonProfilePresentationModel {
-        let portraitData: Data?
-        if let portrait = profile.summary.portrait {
-            portraitData = try? await portraitRepository.data(for: portrait)
-        } else {
-            portraitData = nil
-        }
-
-        return PersonProfilePresentationModel(
+    private func makePresentation(from profile: PersonProfile) -> PersonProfilePresentationModel {
+        PersonProfilePresentationModel(
             id: profile.id,
             name: profile.summary.name.fullName,
-            portraitData: portraitData,
+            portrait: profile.summary.portrait,
             birth: LifeEventPresentationModel(date: profile.summary.birth.date,
                                                place: profile.summary.birth.place),
             death: profile.summary.death.map {

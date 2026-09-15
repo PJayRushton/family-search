@@ -4,10 +4,12 @@ import SwiftData
 /// Owns all SwiftData access. Callers exchange domain values, never persistence entities.
 @ModelActor
 actor SwiftDataPeopleStore {
+    /// Used by `AppContainer` for the production store that survives app relaunches.
     nonisolated static func makePersistent() throws -> SwiftDataPeopleStore {
         try SwiftDataPeopleStore(modelContainer: ModelContainer(for: PersonEntity.self, RelativeEntity.self))
     }
 
+    /// Used by persistence tests to create and reopen a store at a controlled temporary URL.
     nonisolated static func makePersistent(at url: URL) throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(url: url)
         return try SwiftDataPeopleStore(
@@ -16,6 +18,7 @@ actor SwiftDataPeopleStore {
             ))
     }
 
+    /// Used by unit tests and previews so their data is isolated and discarded afterward.
     nonisolated static func makeInMemory() throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try SwiftDataPeopleStore(

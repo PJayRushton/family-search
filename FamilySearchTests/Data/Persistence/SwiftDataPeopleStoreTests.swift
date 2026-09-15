@@ -72,8 +72,8 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
     }
 
     func testSeededPreviewUsesStoredDomainValues() async throws {
-        let container = PreviewContainer.populated()
-        let people = try await container.peopleRepository.loadPeople().value
+        let repository = PreviewData.makePeopleRepository()
+        let people = try await repository.loadPeople().value
         XCTAssertEqual(Set(people.map(\.name.fullName)), ["Ezra Whitcomb", "Maya Chen"])
     }
 

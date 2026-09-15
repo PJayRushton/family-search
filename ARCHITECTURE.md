@@ -32,7 +32,7 @@ Transport DTOs mirror JSON and exist only inside the remote adapter. SwiftData e
 
 ## Composition
 
-`AppContainer` is the composition root. It constructs concrete dependencies once and creates feature view models through explicit initializers. Tests replace protocols with deterministic fakes; views and view models do not reach into globals or SwiftData's environment.
+`FamilySearchApp` constructs the two production repositories at startup and passes them to `RootView`. The root creates feature view models through explicit initializers. Tests replace repository protocols with deterministic fakes; views and view models do not reach into globals or SwiftData's environment.
 
 ## Previews
 

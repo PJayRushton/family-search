@@ -1,29 +1,39 @@
 import SwiftUI
 
 struct RootView: View {
-    private let container: AppContainer
+    private let peopleRepository: any PeopleRepository
+    private let portraitRepository: any PortraitRepository
     @State private var path: [AppRoute] = []
     @State private var peopleListViewModel: PeopleListViewModel
 
     @MainActor
-    init(container: AppContainer) {
-        self.container = container
-        _peopleListViewModel = State(initialValue: container.makePeopleListViewModel())
+    init(
+        peopleRepository: any PeopleRepository,
+        portraitRepository: any PortraitRepository
+    ) {
+        self.peopleRepository = peopleRepository
+        self.portraitRepository = portraitRepository
+        _peopleListViewModel = State(
+            initialValue: PeopleListViewModel(repository: peopleRepository)
+        )
     }
 
     var body: some View {
         NavigationStack(path: $path) {
             PeopleListView(
                 viewModel: peopleListViewModel,
-                makePortraitViewModel: container.makePortraitViewModel,
+                makePortraitViewModel: makePortraitViewModel,
                 onSelectPerson: navigate
             )
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
                 case .profile(let personID):
                     PersonProfileView(
-                        viewModel: container.makePersonProfileViewModel(id: personID),
-                        makePortraitViewModel: container.makePortraitViewModel,
+                        viewModel: PersonProfileViewModel(
+                            personID: personID,
+                            repository: peopleRepository
+                        ),
+                        makePortraitViewModel: makePortraitViewModel,
                         onSelectRelative: navigate
                     )
                 }
@@ -33,5 +43,9 @@ struct RootView: View {
 
     private func navigate(to personID: PersonID) {
         path = AppRoute.path(afterSelecting: personID, from: path)
+    }
+
+    private func makePortraitViewModel(portrait: PortraitReference?) -> PortraitViewModel {
+        PortraitViewModel(portrait: portrait, repository: portraitRepository)
     }
 }

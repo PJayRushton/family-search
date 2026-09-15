@@ -4,7 +4,7 @@ import SwiftData
 /// Owns all SwiftData access. Callers exchange domain values, never persistence entities.
 @ModelActor
 actor SwiftDataPeopleStore {
-    /// Used by `AppContainer` for the production store that survives app relaunches.
+    /// Used at app startup for the production store that survives app relaunches.
     nonisolated static func makePersistent() throws -> SwiftDataPeopleStore {
         try SwiftDataPeopleStore(modelContainer: ModelContainer(for: PersonEntity.self, RelativeEntity.self))
     }

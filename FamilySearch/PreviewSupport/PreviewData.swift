@@ -1,18 +1,20 @@
 import Foundation
 
 @MainActor
-enum PreviewContainer {
+enum PreviewData {
     /// Previews exercise production SwiftData mapping while remaining memory-only and offline.
-    static func populated() -> AppContainer {
+    static func makePeopleRepository() -> any PeopleRepository {
         do {
             let store = try SwiftDataPeopleStore.makeInMemory()
-            return AppContainer(
-                peopleRepository: StoredPeopleRepository(
-                    store: store,
-                    seedProfiles: [sampleProfile, livingProfile]
-                ),
-                portraitRepository: PreviewPortraitRepository())
+            return StoredPeopleRepository(
+                store: store,
+                seedProfiles: [sampleProfile, livingProfile]
+            )
         } catch { preconditionFailure("Preview persistence failed: \(error)") }
+    }
+
+    static func makePortraitViewModel(portrait: PortraitReference?) -> PortraitViewModel {
+        PortraitViewModel(portrait: portrait, repository: PreviewPortraitRepository())
     }
 
     static let profileID = PersonID(rawValue: "L4RX-9FT")

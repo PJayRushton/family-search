@@ -44,7 +44,7 @@ List membership is stored separately from profile completeness. That lets a prof
 
 ### Navigation and concurrency
 
-The root `NavigationStack` carries only stable `PersonID` values. Each destination constructs its injected profile view model through the composition root, which makes relative navigation recursive without coupling screens to persistence objects.
+The root `NavigationStack` carries only stable `PersonID` values. `RootView` constructs each profile view model with the shared people repository, which makes relative navigation recursive without coupling screens to persistence objects.
 
 SwiftUI `.task` owns screen work, including retries, so disappearance cancels the load. Cancellation is preserved through URLSession; generation tokens prevent a late response from overwriting a newer load. UI-observed mutation stays on the main actor, while clients, repositories, portrait storage, and SwiftData access use actor isolation.
 
@@ -72,7 +72,7 @@ None. SwiftUI, Observation, SwiftData, Foundation/URLSession, and UIKit cover th
 
 - Profile records have a fetched/not-fetched marker but no age or server-revision policy. A visited profile is refreshed whenever opened, then falls back to its saved copy.
 - Portrait files do not yet have size accounting or eviction. Invalid image bytes are rejected before caching.
-- Persistent-container creation is treated as an app invariant. A production app would surface store recovery or migration failure instead of terminating at composition time.
+- Persistent-store creation is treated as an app invariant. A production app would surface store recovery or migration failure instead of terminating at startup.
 - The UI prioritizes clarity and accessibility over custom visual polish.
 
 ## If the list were 100,000 people

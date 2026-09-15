@@ -74,9 +74,9 @@ struct PeopleListView: View {
 }
 
 #Preview("Saved people") {
-    let container = PreviewContainer.populated()
+    let repository = PreviewData.makePeopleRepository()
     PeopleListView(
-        viewModel: container.makePeopleListViewModel(),
-        makePortraitViewModel: container.makePortraitViewModel
+        viewModel: PeopleListViewModel(repository: repository),
+        makePortraitViewModel: PreviewData.makePortraitViewModel
     )
 }

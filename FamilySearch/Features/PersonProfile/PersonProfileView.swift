@@ -126,22 +126,28 @@ struct PersonProfileView: View {
 }
 
 #Preview("Cached profile") {
-    let container = PreviewContainer.populated()
+    let repository = PreviewData.makePeopleRepository()
     NavigationStack {
         PersonProfileView(
-            viewModel: container.makePersonProfileViewModel(id: PreviewContainer.profileID),
-            makePortraitViewModel: container.makePortraitViewModel,
+            viewModel: PersonProfileViewModel(
+                personID: PreviewData.profileID,
+                repository: repository
+            ),
+            makePortraitViewModel: PreviewData.makePortraitViewModel,
             onSelectRelative: { _ in }
         )
     }
 }
 
 #Preview("Living, no occupation") {
-    let container = PreviewContainer.populated()
+    let repository = PreviewData.makePeopleRepository()
     NavigationStack {
         PersonProfileView(
-            viewModel: container.makePersonProfileViewModel(id: PreviewContainer.livingProfileID),
-            makePortraitViewModel: container.makePortraitViewModel,
+            viewModel: PersonProfileViewModel(
+                personID: PreviewData.livingProfileID,
+                repository: repository
+            ),
+            makePortraitViewModel: PreviewData.makePortraitViewModel,
             onSelectRelative: { _ in }
         )
     }

@@ -21,7 +21,6 @@ final class PeopleListViewModel {
     }
 
     private(set) var state: State = .idle
-    private(set) var selectedPersonID: PersonID?
 
     private let repository: any PeopleRepository
     // A retry supersedes earlier work even if an underlying dependency ignores cancellation.
@@ -52,14 +51,6 @@ final class PeopleListViewModel {
 
     func cancel() {
         loadGeneration += 1
-    }
-
-    func selectPerson(id: PersonID) {
-        selectedPersonID = id
-    }
-
-    func clearSelection() {
-        selectedPersonID = nil
     }
 
     private func apply(_ snapshot: RepositorySnapshot<[PersonSummary]>) {

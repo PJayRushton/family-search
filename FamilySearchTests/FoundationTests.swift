@@ -63,18 +63,6 @@ final class FoundationTests: XCTestCase {
         XCTAssertEqual(staleNotice, "Offline")
     }
 
-    func testViewModelExposesNavigationIntentAsPersonID() {
-        let viewModel = PeopleListViewModel(
-            repository: PeopleRepositoryFake(snapshots: [])
-        )
-        let id = PersonID(rawValue: "L4RX-9FT")
-
-        viewModel.selectPerson(id: id)
-
-        XCTAssertEqual(viewModel.selectedPersonID, id)
-        viewModel.clearSelection()
-        XCTAssertNil(viewModel.selectedPersonID)
-    }
 }
 
 private struct PeopleRepositoryFake: PeopleRepository {

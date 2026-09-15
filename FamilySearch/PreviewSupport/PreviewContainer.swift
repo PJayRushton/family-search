@@ -6,47 +6,38 @@ enum PreviewContainer {
     static func populated() -> AppContainer {
         do {
             let store = try SwiftDataPeopleStore.makeInMemory()
-            return AppContainer(peopleRepository: StoredPeopleRepository(store: store, seedProfiles: sampleProfiles),
+            return AppContainer(peopleRepository: StoredPeopleRepository(
+                store: store,
+                seedProfiles: [sampleProfile, livingProfile]
+            ),
                                 portraitRepository: PreviewPortraitRepository())
         } catch { preconditionFailure("Preview persistence failed: \(error)") }
     }
 
-    private static let sampleProfiles = [
-        PersonProfile(
-            summary: PersonSummary(
-                id: PersonID(rawValue: "L4RX-9FT"),
-                name: PersonName(given: "Ezra", surname: "Whitcomb"),
-                isLiving: false,
-                birth: LifeEvent(date: "12 March 1868", year: 1868, place: "Nauvoo, Illinois"),
-                death: LifeEvent(date: "3 November 1941", year: 1941, place: "Ogden, Utah"),
-                portrait: nil
-            ),
-            occupation: "Carpenter",
-            biography: "Ezra built homes and raised a family in northern Utah.",
-            relatives: [
-                RelativeSummary(
-                    id: PersonID(rawValue: "KWJH-123"),
-                    relationship: .spouse,
-                    name: PersonName(given: "Ada", surname: "Whitcomb"),
-                    birthYear: 1871,
-                    deathYear: 1950
-                )
-            ]
+    static let profileID = PersonID(rawValue: "L4RX-9FT")
+    static let livingProfileID = PersonID(rawValue: "M7AB-2CD")
+
+    private static let sampleProfile = PersonProfile(
+        summary: PersonSummary(
+            id: profileID, name: PersonName(given: "Ezra", surname: "Whitcomb"),
+            isLiving: false, birth: LifeEvent(date: "12 March 1868", year: 1868, place: "Nauvoo, Illinois"),
+            death: LifeEvent(date: "3 November 1941", year: 1941, place: "Ogden, Utah"), portrait: nil
+        ), occupation: "Carpenter", biography: "Ezra built homes and raised a family in northern Utah.",
+        relatives: [RelativeSummary(id: PersonID(rawValue: "KWJH-123"), relationship: .spouse,
+                                    name: PersonName(given: "Ada", surname: "Whitcomb"),
+                                    birthYear: 1871, deathYear: 1950)]
+    )
+
+    private static let livingProfile = PersonProfile(
+        summary: PersonSummary(
+            id: livingProfileID, name: PersonName(given: "Maya", surname: "Chen"), isLiving: true,
+            birth: LifeEvent(date: "8 July 1992", year: 1992, place: "Seattle, Washington"),
+            death: nil, portrait: nil
         ),
-        PersonProfile(
-            summary: PersonSummary(
-                id: PersonID(rawValue: "LIVE-123"),
-                name: PersonName(given: "June", surname: "Hart"),
-                isLiving: true,
-                birth: LifeEvent(date: "about 1980", year: 1980, place: "Denver, Colorado"),
-                death: nil,
-                portrait: nil
-            ),
-            occupation: nil,
-            biography: "A living-person preview with intentionally absent optional fields.",
-            relatives: []
-        )
-    ]
+        occupation: nil,
+        biography: "Maya enjoys preserving family stories.",
+        relatives: []
+    )
 }
 
 private struct PreviewPortraitRepository: PortraitRepository {

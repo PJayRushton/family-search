@@ -16,9 +16,7 @@ struct PeopleListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            content.navigationTitle("People")
-        }
+        content.navigationTitle("People")
         .task { await viewModel.load() }
         .onDisappear { viewModel.cancel() }
     }
@@ -36,10 +34,7 @@ struct PeopleListView: View {
             )
         case let .content(rows, isStale, notice):
             List(rows) { row in
-                Button {
-                    viewModel.selectPerson(id: row.id)
-                    onSelectPerson(row.id)
-                } label: {
+                Button { onSelectPerson(row.id) } label: {
                     HStack(spacing: 12) {
                         PortraitView(viewModel: makePortraitViewModel(row.portrait))
                             .frame(width: 56, height: 56)

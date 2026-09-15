@@ -33,6 +33,20 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
         XCTAssertEqual(storedProfile, profile)
     }
 
+    func testProfileOnlyRecordDoesNotAppearInPeopleList() async throws {
+        let store = try SwiftDataPeopleStore.makeInMemory()
+        let profile = PersonProfile(
+            summary: Self.summary(), occupation: nil, biography: "Profile only", relatives: []
+        )
+
+        try await store.upsert(profile: profile)
+
+        let storedProfile = try await store.profile(id: profile.id)
+        let listedPeople = try await store.summaries()
+        XCTAssertEqual(storedProfile, profile)
+        XCTAssertTrue(listedPeople.isEmpty)
+    }
+
     func testSummaryRefreshDoesNotEraseFetchedProfileFields() async throws {
         let store = try SwiftDataPeopleStore.makeInMemory()
         let profile = PersonProfile(

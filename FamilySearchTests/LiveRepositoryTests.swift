@@ -23,7 +23,7 @@ final class LiveRepositoryTests: XCTestCase {
         }
         XCTAssertEqual(saved, [cached])
         // SwiftData applies its surname sort, proving network values did not bypass the store.
-        XCTAssertEqual(fresh.map(\.id), [alpha.id, cached.id, zulu.id])
+        XCTAssertEqual(fresh.map(\.id), [alpha.id, zulu.id])
         let storedAlpha = try await store.summary(id: alpha.id)
         XCTAssertEqual(storedAlpha, alpha)
     }
@@ -66,7 +66,9 @@ final class LiveRepositoryTests: XCTestCase {
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = FilePortraitStore(directory: directory)
-        let bytes = Data([0x89, 0x50, 0x4E, 0x47])
+        let bytes = try XCTUnwrap(Data(base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        ))
         let client = PortraitClientSpy(result: .success(bytes))
         let repository = LivePortraitRepository(client: client, store: store)
         let portrait = PortraitReference(

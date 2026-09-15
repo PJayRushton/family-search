@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PeopleListView: View {
     @State private var viewModel: PeopleListViewModel
+    @State private var retryID = 0
     private let makePortraitViewModel: (PortraitReference?) -> PortraitViewModel
     private let onSelectPerson: (PersonID) -> Void
 
@@ -17,7 +18,7 @@ struct PeopleListView: View {
 
     var body: some View {
         content.navigationTitle("People")
-        .task { await viewModel.load() }
+        .task(id: retryID) { await viewModel.load() }
         .onDisappear { viewModel.cancel() }
     }
 
@@ -63,7 +64,7 @@ struct PeopleListView: View {
             } description: {
                 Text(message)
             } actions: {
-                Button("Try Again") { Task { await viewModel.load() } }
+                Button("Try Again") { retryID += 1 }
             }
         }
     }

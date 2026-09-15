@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PersonProfileView: View {
     @State private var viewModel: PersonProfileViewModel
+    @State private var retryID = 0
     private let makePortraitViewModel: (PortraitReference?) -> PortraitViewModel
     private let onSelectRelative: (PersonID) -> Void
 
@@ -19,7 +20,7 @@ struct PersonProfileView: View {
         content
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
-            .task { await viewModel.load() }
+            .task(id: retryID) { await viewModel.load() }
             .onDisappear { viewModel.cancel() }
     }
 
@@ -56,7 +57,7 @@ struct PersonProfileView: View {
             } description: {
                 Text(message)
             } actions: {
-                Button("Try Again") { Task { await viewModel.load() } }
+                Button("Try Again") { retryID += 1 }
             }
         }
     }

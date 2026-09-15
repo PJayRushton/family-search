@@ -28,7 +28,7 @@ enum RecordsClientError: LocalizedError, Equatable, Sendable {
     }
 }
 
-final class URLSessionRecordsClient: RecordsClient, @unchecked Sendable {
+actor URLSessionRecordsClient: RecordsClient {
     static let serviceBaseURL = URL(string: "https://fs-records-sample.vercel.app/")!
 
     private let baseURL: URL
@@ -51,6 +51,10 @@ final class URLSessionRecordsClient: RecordsClient, @unchecked Sendable {
     }
 
     func fetchProfile(id: PersonID) async throws -> PersonProfile {
+        guard !id.rawValue.isEmpty,
+              id.rawValue.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) == nil else {
+            throw RecordsClientError.invalidData("Person ID cannot contain path separators.")
+        }
         let escapedID = id.rawValue.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
         guard let escapedID else {
             throw RecordsClientError.invalidData("Person ID cannot form a URL.")

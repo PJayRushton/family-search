@@ -38,6 +38,22 @@ final class RecordsClientTests: XCTestCase {
         XCTAssertEqual(profile.relatives.first?.name.fullName, "Amos Whitcomb")
     }
 
+    func testFetchProfileRejectsIDContainingPathSeparatorBeforeRequest() async {
+        let client = makeClient { _ in
+            XCTFail("Invalid IDs must not reach the URL loading layer")
+            return (.success(statusCode: 200), Data())
+        }
+
+        await XCTAssertThrowsErrorAsync(
+            try await client.fetchProfile(id: PersonID(rawValue: "family/person"))
+        ) { error in
+            XCTAssertEqual(
+                error as? RecordsClientError,
+                .invalidData("Person ID cannot contain path separators.")
+            )
+        }
+    }
+
     func testFetchPeopleReportsHTTPFailureWithoutDecodingBody() async {
         let client = makeClient { _ in
             (.success(statusCode: 503), Data("not json".utf8))

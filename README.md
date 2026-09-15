@@ -50,11 +50,11 @@ SwiftUI `.task` owns screen work, including retries, so disappearance cancels th
 
 ## States, previews, and tests
 
-The list distinguishes loading, empty, fresh content, saved/stale content, and first-launch failure with retry. Profiles distinguish loading, fresh content, saved/stale content, and failure. Missing portraits and optional fields have intentional fallbacks.
+The list distinguishes loading, empty, fresh content, saved/stale content, and first-launch failure with retry. Its initial appearance loads through the repository; returning from navigation keeps the existing SwiftData-backed content, while pull to refresh explicitly requests fresh data without replacing the list with a full-screen spinner. Profiles distinguish loading, fresh content, saved/stale content, and failure. Missing portraits and optional fields have intentional fallbacks.
 
 Data-displaying views have previews composed with the real view models and a seeded in-memory SwiftData container. Preview data includes a living person, nullable fields, relatives, and portraits; previews never call the network.
 
-The 33 tests focus on places where defects would be expensive or subtle:
+The 34 tests focus on places where defects would be expensive or subtle:
 
 - service decoding, relative URL resolution, malformed data, HTTP/transport errors, and unsafe IDs;
 - SwiftData round trips, direct lookup behavior, profile merging, list membership, and reopening a disk store;

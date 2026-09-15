@@ -31,9 +31,24 @@ final class PeopleListViewModel {
     }
 
     func load() async {
+        // Navigation can recreate the view task while this view model still owns displayed data.
+        // Keep that SwiftData-backed content until the user explicitly asks for a refresh.
+        guard case .content = state else {
+            await requestPeople(showsLoadingState: true)
+            return
+        }
+    }
+
+    func refresh() async {
+        await requestPeople(showsLoadingState: false)
+    }
+
+    private func requestPeople(showsLoadingState: Bool) async {
         loadGeneration += 1
         let generation = loadGeneration
-        state = .loading
+        if showsLoadingState {
+            state = .loading
+        }
 
         do {
             let result = try await repository.loadPeople()
@@ -44,7 +59,12 @@ final class PeopleListViewModel {
             return
         } catch {
             guard generation == loadGeneration, !Task.isCancelled else { return }
-            state = .failure(message: Self.message(for: error))
+            let message = Self.message(for: error)
+            if case .content(let rows, _, _) = state {
+                state = .content(rows: rows, isStale: true, notice: message)
+            } else {
+                state = .failure(message: message)
+            }
         }
     }
 

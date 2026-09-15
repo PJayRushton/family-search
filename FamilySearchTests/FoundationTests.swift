@@ -58,6 +58,36 @@ final class FoundationTests: XCTestCase {
         XCTAssertEqual(staleNotice, "Offline")
     }
 
+    func testLoadedListDoesNotReloadUntilExplicitRefresh() async {
+        let person = PersonSummary.fixture()
+        let repository = PeopleRepositorySpy(
+            results: [
+                RepositoryResult([person]),
+                RepositoryResult(
+                    [person],
+                    refreshIssue: .refreshFailed(message: "Couldn't refresh. Showing saved people.")
+                ),
+            ])
+        let viewModel = PeopleListViewModel(repository: repository)
+
+        await viewModel.load()
+        await viewModel.load()
+
+        let loadCountAfterReappearing = await repository.loadCount()
+        XCTAssertEqual(loadCountAfterReappearing, 1)
+
+        await viewModel.refresh()
+
+        let loadCountAfterRefreshing = await repository.loadCount()
+        XCTAssertEqual(loadCountAfterRefreshing, 2)
+        guard case .content(let rows, let isStale, let notice) = viewModel.state else {
+            return XCTFail("Expected content to remain visible after refresh")
+        }
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertTrue(isStale)
+        XCTAssertEqual(notice, "Couldn't refresh. Showing saved people.")
+    }
+
     func testNavigationPushesNewPeopleButCollapsesFamilyCycles() {
         let parentID = PersonID(rawValue: "PARENT")
         let childID = PersonID(rawValue: "CHILD")
@@ -73,6 +103,28 @@ final class FoundationTests: XCTestCase {
         XCTAssertEqual(path, [.profile(parentID)])
     }
 
+}
+
+private actor PeopleRepositorySpy: PeopleRepository {
+    private var results: [RepositoryResult<[PersonSummary]>]
+    private(set) var peopleLoadCount = 0
+
+    init(results: [RepositoryResult<[PersonSummary]>]) {
+        self.results = results
+    }
+
+    func loadPeople() async throws -> RepositoryResult<[PersonSummary]> {
+        peopleLoadCount += 1
+        return results.removeFirst()
+    }
+
+    func loadProfile(id: PersonID) async throws -> RepositoryResult<PersonProfile> {
+        throw PeopleRepositoryError.notFound(id)
+    }
+
+    func loadCount() -> Int {
+        peopleLoadCount
+    }
 }
 
 private struct PeopleRepositoryFake: PeopleRepository {

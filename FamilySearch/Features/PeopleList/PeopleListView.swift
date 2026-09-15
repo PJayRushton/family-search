@@ -19,6 +19,7 @@ struct PeopleListView: View {
     var body: some View {
         content.navigationTitle("People")
             .task(id: retryID) { await viewModel.load() }
+            .refreshable { await viewModel.refresh() }
             .onDisappear { viewModel.cancel() }
     }
 

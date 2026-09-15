@@ -16,7 +16,7 @@ struct RootView: View {
             PeopleListView(
                 viewModel: peopleListViewModel,
                 makePortraitViewModel: container.makePortraitViewModel,
-                onSelectPerson: { path.append(.profile($0)) }
+                onSelectPerson: navigate
             )
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
@@ -24,10 +24,14 @@ struct RootView: View {
                     PersonProfileView(
                         viewModel: container.makePersonProfileViewModel(id: personID),
                         makePortraitViewModel: container.makePortraitViewModel,
-                        onSelectRelative: { path.append(.profile($0)) }
+                        onSelectRelative: navigate
                     )
                 }
             }
         }
+    }
+
+    private func navigate(to personID: PersonID) {
+        path = AppRoute.path(afterSelecting: personID, from: path)
     }
 }

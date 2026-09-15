@@ -54,7 +54,7 @@ The list distinguishes loading, empty, fresh content, saved/stale content, and f
 
 Data-displaying views have previews composed with the real view models and a seeded in-memory SwiftData container. Preview data includes a living person, nullable fields, relatives, and portraits; previews never call the network.
 
-The 32 tests focus on places where defects would be expensive or subtle:
+The 33 tests focus on places where defects would be expensive or subtle:
 
 - service decoding, relative URL resolution, malformed data, HTTP/transport errors, and unsafe IDs;
 - SwiftData round trips, direct lookup behavior, profile merging, list membership, and reopening a disk store;

@@ -63,6 +63,21 @@ final class FoundationTests: XCTestCase {
         XCTAssertEqual(staleNotice, "Offline")
     }
 
+    func testNavigationPushesNewPeopleButCollapsesFamilyCycles() {
+        let parentID = PersonID(rawValue: "PARENT")
+        let childID = PersonID(rawValue: "CHILD")
+        var path = AppRoute.path(afterSelecting: parentID, from: [])
+
+        path = AppRoute.path(afterSelecting: childID, from: path)
+        XCTAssertEqual(path, [.profile(parentID), .profile(childID)])
+
+        path = AppRoute.path(afterSelecting: parentID, from: path)
+        XCTAssertEqual(path, [.profile(parentID)])
+
+        path = AppRoute.path(afterSelecting: parentID, from: path)
+        XCTAssertEqual(path, [.profile(parentID)])
+    }
+
 }
 
 private struct PeopleRepositoryFake: PeopleRepository {

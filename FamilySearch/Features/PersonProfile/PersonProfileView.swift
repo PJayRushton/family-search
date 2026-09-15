@@ -17,48 +17,61 @@ struct PersonProfileView: View {
     }
 
     var body: some View {
-        content
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .task(id: retryID) { await viewModel.load() }
-            .onDisappear { viewModel.cancel() }
+        Group {
+            switch viewModel.state {
+            case .idle, .loading:
+                loadingView
+            case .content(let profile, let isStale, let notice):
+                profileView(profile, isStale: isStale, notice: notice)
+            case .failure(let message):
+                failureView(message: message)
+            }
+        }
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .task(id: retryID) { await viewModel.load() }
+        .onDisappear { viewModel.cancel() }
     }
 
-    @ViewBuilder
-    private var content: some View {
-        switch viewModel.state {
-        case .idle, .loading:
-            ProgressView("Loading profile…")
-        case .content(let profile, let isStale, let notice):
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    header(profile)
-                    lifeDetails(profile)
-                    if let occupation = profile.occupation, !occupation.isEmpty {
-                        labeledText("Occupation", occupation)
-                    }
-                    labeledText("Biography", profile.biography)
-                    relatives(profile.relatives)
+    private var loadingView: some View {
+        ProgressView("Loading profile…")
+    }
+
+    private func profileView(
+        _ profile: PersonProfilePresentationModel,
+        isStale: Bool,
+        notice: String?
+    ) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                header(profile)
+                lifeDetails(profile)
+                if let occupation = profile.occupation, !occupation.isEmpty {
+                    labeledText("Occupation", occupation)
                 }
-                .padding()
+                labeledText("Biography", profile.biography)
+                relatives(profile.relatives)
             }
-            .safeAreaInset(edge: .top) {
-                if isStale, let notice {
-                    Text(notice)
-                        .font(.caption)
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity)
-                        .background(.yellow.opacity(0.2))
-                }
+            .padding()
+        }
+        .safeAreaInset(edge: .top) {
+            if isStale, let notice {
+                Text(notice)
+                    .font(.caption)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity)
+                    .background(.yellow.opacity(0.2))
             }
-        case .failure(let message):
-            ContentUnavailableView {
-                Label("Couldn't Load Profile", systemImage: "person.crop.circle.badge.exclamationmark")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Try Again") { retryID += 1 }
-            }
+        }
+    }
+
+    private func failureView(message: String) -> some View {
+        ContentUnavailableView {
+            Label("Couldn't Load Profile", systemImage: "person.crop.circle.badge.exclamationmark")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Try Again") { retryID += 1 }
         }
     }
 

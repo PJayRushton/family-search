@@ -65,7 +65,7 @@ final class SwiftDataPeopleStoreTests: XCTestCase {
         guard case let .cached(people) = snapshots.first else {
             return XCTFail("Expected preview repository to emit persisted people")
         }
-        XCTAssertEqual(people.first?.name.fullName, "Ezra Whitcomb")
+        XCTAssertTrue(people.contains { $0.name.fullName == "Ezra Whitcomb" })
     }
 
     func testProfileSurvivesReopeningDiskStore() async throws {

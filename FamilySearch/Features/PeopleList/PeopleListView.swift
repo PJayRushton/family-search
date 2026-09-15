@@ -2,15 +2,15 @@ import SwiftUI
 
 struct PeopleListView: View {
     @State private var viewModel: PeopleListViewModel
+    private let onSelectPerson: (PersonID) -> Void
 
-    init(viewModel: PeopleListViewModel) {
+    init(viewModel: PeopleListViewModel, onSelectPerson: @escaping (PersonID) -> Void = { _ in }) {
         _viewModel = State(initialValue: viewModel)
+        self.onSelectPerson = onSelectPerson
     }
 
     var body: some View {
-        NavigationStack {
-            content.navigationTitle("People")
-        }
+        content.navigationTitle("People")
         .task { await viewModel.load() }
         .onDisappear { viewModel.cancel() }
     }
@@ -24,10 +24,12 @@ struct PeopleListView: View {
             ContentUnavailableView("No People", systemImage: "person.2", description: Text("There are no records to show."))
         case let .content(rows, isStale, notice):
             List(rows) { row in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(row.name).font(.headline)
-                    Text(row.lifespan).foregroundStyle(.secondary)
-                    Text(row.birthplace).font(.caption).foregroundStyle(.secondary)
+                Button { onSelectPerson(row.id) } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(row.name).font(.headline).foregroundStyle(.primary)
+                        Text(row.lifespan).foregroundStyle(.secondary)
+                        Text(row.birthplace).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             .safeAreaInset(edge: .top) {

@@ -22,4 +22,13 @@ struct AppContainer {
     func makePeopleListViewModel() -> PeopleListViewModel {
         PeopleListViewModel(repository: peopleRepository)
     }
+
+    @MainActor
+    func makePersonProfileViewModel(id: PersonID) -> PersonProfileViewModel {
+        PersonProfileViewModel(
+            personID: id,
+            repository: peopleRepository,
+            portraitRepository: portraitRepository
+        )
+    }
 }

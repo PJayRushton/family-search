@@ -24,6 +24,7 @@ actor SwiftDataPeopleStore {
 
     func summaries() throws -> [PersonSummary] {
         let descriptor = FetchDescriptor<PersonEntity>(
+            predicate: #Predicate { $0.isInPeopleList == true },
             sortBy: [SortDescriptor(\PersonEntity.surname), SortDescriptor(\PersonEntity.givenName)]
         )
         return try modelContext.fetch(descriptor).compactMap(\.summary)
@@ -34,9 +35,20 @@ actor SwiftDataPeopleStore {
     func profile(id: PersonID) throws -> PersonProfile? { try entity(id: id)?.profile }
 
     func upsert(summaries: [PersonSummary]) throws {
+        // A successful collection refresh replaces membership without deleting cached profiles.
+        let listed = try modelContext.fetch(FetchDescriptor<PersonEntity>(
+            predicate: #Predicate { $0.isInPeopleList == true }
+        ))
+        listed.forEach { $0.isInPeopleList = false }
         for summary in summaries {
-            if let existing = try entity(id: summary.id) { apply(summary, to: existing) }
-            else { modelContext.insert(makeEntity(from: summary)) }
+            if let existing = try entity(id: summary.id) {
+                apply(summary, to: existing)
+                existing.isInPeopleList = true
+            } else {
+                let record = makeEntity(from: summary)
+                record.isInPeopleList = true
+                modelContext.insert(record)
+            }
         }
         try modelContext.save()
     }
@@ -147,5 +159,8 @@ struct StoredPeopleRepository: PeopleRepository {
 
     private func seedIfNeeded() async throws {
         for profile in seedProfiles { try await store.upsert(profile: profile) }
+        if !seedProfiles.isEmpty {
+            try await store.upsert(summaries: seedProfiles.map(\.summary))
+        }
     }
 }

@@ -10,9 +10,18 @@ struct AppContainer {
         do {
             let store = try SwiftDataPeopleStore.makePersistent()
             let portraitStore = try FilePortraitStore.applicationSupport()
+            let recordsClient: any RecordsClient
+#if DEBUG
+            // Makes force-quit/offline acceptance testing deterministic without changing Mac networking.
+            recordsClient = ProcessInfo.processInfo.environment["FAMILY_SEARCH_FORCE_OFFLINE"] == "1"
+                ? OfflineRecordsClient()
+                : URLSessionRecordsClient()
+#else
+            recordsClient = URLSessionRecordsClient()
+#endif
             return AppContainer(
                 peopleRepository: LivePeopleRepository(
-                    recordsClient: URLSessionRecordsClient(),
+                    recordsClient: recordsClient,
                     store: store
                 ),
                 portraitRepository: LivePortraitRepository(
@@ -43,3 +52,15 @@ struct AppContainer {
         PortraitViewModel(portrait: portrait, repository: portraitRepository)
     }
 }
+
+#if DEBUG
+private struct OfflineRecordsClient: RecordsClient {
+    func fetchPeople() async throws -> [PersonSummary] {
+        throw RecordsClientError.transport("No network connection is available.")
+    }
+
+    func fetchProfile(id: PersonID) async throws -> PersonProfile {
+        throw RecordsClientError.transport("No network connection is available.")
+    }
+}
+#endif

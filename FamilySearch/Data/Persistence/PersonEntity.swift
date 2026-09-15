@@ -18,6 +18,8 @@ final class PersonEntity {
     var occupation: String?
     var biography: String?
     var hasFetchedProfile: Bool
+    /// Separates collection records from relatives fetched only through a profile.
+    var isInPeopleList: Bool?
     @Relationship(deleteRule: .cascade, inverse: \RelativeEntity.person)
     var relatives: [RelativeEntity]
 
@@ -25,6 +27,7 @@ final class PersonEntity {
          birthYear: Int, birthPlace: String, deathDate: String? = nil, deathYear: Int? = nil,
          deathPlace: String? = nil, portraitKey: String? = nil, portraitRemoteURL: String? = nil,
          occupation: String? = nil, biography: String? = nil, hasFetchedProfile: Bool = false,
+         isInPeopleList: Bool? = false,
          relatives: [RelativeEntity] = []) {
         self.personID = personID
         self.givenName = givenName
@@ -41,6 +44,7 @@ final class PersonEntity {
         self.occupation = occupation
         self.biography = biography
         self.hasFetchedProfile = hasFetchedProfile
+        self.isInPeopleList = isInPeopleList
         self.relatives = relatives
     }
 }

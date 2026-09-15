@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 actor LivePortraitRepository: PortraitRepository {
     private let client: any PortraitClient
@@ -14,6 +15,7 @@ actor LivePortraitRepository: PortraitRepository {
 
         let remoteData = try await client.fetchData(from: portrait.remoteURL)
         try Task.checkCancellation()
+        guard UIImage(data: remoteData) != nil else { throw RecordsClientError.invalidResponse }
         try await store.save(remoteData, for: portrait)
         // Reading after writing keeps the same source-of-truth rule as record refreshes.
         return try await store.data(for: portrait)

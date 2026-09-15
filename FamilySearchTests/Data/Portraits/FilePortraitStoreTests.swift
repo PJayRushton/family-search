@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+
 @testable import FamilySearch
 
 final class FilePortraitStoreTests: XCTestCase {
@@ -19,8 +20,11 @@ final class FilePortraitStoreTests: XCTestCase {
         let reopenedStore = FilePortraitStore(directory: directory)
         let savedBytes = try await reopenedStore.data(for: portrait)
         XCTAssertEqual(savedBytes, bytes)
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(at: directory,
-                                                                    includingPropertiesForKeys: nil).count, 1)
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ).count, 1)
     }
 
     func testMissingPortraitReturnsNil() async throws {

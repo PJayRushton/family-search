@@ -23,12 +23,14 @@ final class PersonEntity {
     @Relationship(deleteRule: .cascade, inverse: \RelativeEntity.person)
     var relatives: [RelativeEntity]
 
-    init(personID: String, givenName: String, surname: String, isLiving: Bool, birthDate: String,
-         birthYear: Int, birthPlace: String, deathDate: String? = nil, deathYear: Int? = nil,
-         deathPlace: String? = nil, portraitKey: String? = nil, portraitRemoteURL: String? = nil,
-         occupation: String? = nil, biography: String? = nil, hasFetchedProfile: Bool = false,
-         isInPeopleList: Bool? = false,
-         relatives: [RelativeEntity] = []) {
+    init(
+        personID: String, givenName: String, surname: String, isLiving: Bool, birthDate: String,
+        birthYear: Int, birthPlace: String, deathDate: String? = nil, deathYear: Int? = nil,
+        deathPlace: String? = nil, portraitKey: String? = nil, portraitRemoteURL: String? = nil,
+        occupation: String? = nil, biography: String? = nil, hasFetchedProfile: Bool = false,
+        isInPeopleList: Bool? = false,
+        relatives: [RelativeEntity] = []
+    ) {
         self.personID = personID
         self.givenName = givenName
         self.surname = surname
@@ -59,8 +61,10 @@ final class RelativeEntity {
     var deathYear: Int?
     var person: PersonEntity?
 
-    init(personID: String, relationship: String, givenName: String, surname: String,
-         birthYear: Int, deathYear: Int?) {
+    init(
+        personID: String, relationship: String, givenName: String, surname: String,
+        birthYear: Int, deathYear: Int?
+    ) {
         self.personID = personID
         self.relationship = relationship
         self.givenName = givenName

@@ -18,8 +18,8 @@ struct PeopleListView: View {
 
     var body: some View {
         content.navigationTitle("People")
-        .task(id: retryID) { await viewModel.load() }
-        .onDisappear { viewModel.cancel() }
+            .task(id: retryID) { await viewModel.load() }
+            .onDisappear { viewModel.cancel() }
     }
 
     @ViewBuilder
@@ -33,9 +33,11 @@ struct PeopleListView: View {
                 systemImage: "person.2",
                 description: Text("There are no records to show.")
             )
-        case let .content(rows, isStale, notice):
+        case .content(let rows, let isStale, let notice):
             List(rows) { row in
-                Button { onSelectPerson(row.id) } label: {
+                Button {
+                    onSelectPerson(row.id)
+                } label: {
                     HStack(spacing: 12) {
                         PortraitView(viewModel: makePortraitViewModel(row.portrait))
                             .frame(width: 56, height: 56)
@@ -58,7 +60,7 @@ struct PeopleListView: View {
                         .background(.yellow.opacity(0.2))
                 }
             }
-        case let .failure(message):
+        case .failure(let message):
             ContentUnavailableView {
                 Label("Couldn't Load People", systemImage: "wifi.exclamationmark")
             } description: {

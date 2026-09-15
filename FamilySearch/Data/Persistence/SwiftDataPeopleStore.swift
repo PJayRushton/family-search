@@ -10,16 +10,18 @@ actor SwiftDataPeopleStore {
 
     nonisolated static func makePersistent(at url: URL) throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(url: url)
-        return try SwiftDataPeopleStore(modelContainer: ModelContainer(
-            for: PersonEntity.self, RelativeEntity.self, configurations: configuration
-        ))
+        return try SwiftDataPeopleStore(
+            modelContainer: ModelContainer(
+                for: PersonEntity.self, RelativeEntity.self, configurations: configuration
+            ))
     }
 
     nonisolated static func makeInMemory() throws -> SwiftDataPeopleStore {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try SwiftDataPeopleStore(modelContainer: ModelContainer(
-            for: PersonEntity.self, RelativeEntity.self, configurations: configuration
-        ))
+        return try SwiftDataPeopleStore(
+            modelContainer: ModelContainer(
+                for: PersonEntity.self, RelativeEntity.self, configurations: configuration
+            ))
     }
 
     func summaries() throws -> [PersonSummary] {
@@ -36,10 +38,13 @@ actor SwiftDataPeopleStore {
 
     func upsert(summaries: [PersonSummary]) throws {
         // A successful collection refresh replaces membership without deleting cached profiles.
-        let listed = try modelContext.fetch(FetchDescriptor<PersonEntity>(
-            predicate: #Predicate { $0.isInPeopleList == true }
-        ))
-        listed.forEach { $0.isInPeopleList = false }
+        let listed = try modelContext.fetch(
+            FetchDescriptor<PersonEntity>(
+                predicate: #Predicate { $0.isInPeopleList == true }
+            ))
+        for entity in listed {
+            entity.isInPeopleList = false
+        }
         for summary in summaries {
             if let existing = try entity(id: summary.id) {
                 apply(summary, to: existing)
@@ -79,10 +84,11 @@ actor SwiftDataPeopleStore {
     }
 
     private func makeEntity(from summary: PersonSummary) -> PersonEntity {
-        let entity = PersonEntity(personID: summary.id.rawValue, givenName: summary.name.given,
-                                  surname: summary.name.surname, isLiving: summary.isLiving,
-                                  birthDate: summary.birth.date, birthYear: summary.birth.year,
-                                  birthPlace: summary.birth.place)
+        let entity = PersonEntity(
+            personID: summary.id.rawValue, givenName: summary.name.given,
+            surname: summary.name.surname, isLiving: summary.isLiving,
+            birthDate: summary.birth.date, birthYear: summary.birth.year,
+            birthPlace: summary.birth.place)
         apply(summary, to: entity)
         return entity
     }
@@ -103,9 +109,10 @@ actor SwiftDataPeopleStore {
     }
 
     private func makeEntity(from relative: RelativeSummary) -> RelativeEntity {
-        RelativeEntity(personID: relative.id.rawValue, relationship: relative.relationship.rawValue,
-                       givenName: relative.name.given, surname: relative.name.surname,
-                       birthYear: relative.birthYear, deathYear: relative.deathYear)
+        RelativeEntity(
+            personID: relative.id.rawValue, relationship: relative.relationship.rawValue,
+            givenName: relative.name.given, surname: relative.name.surname,
+            birthYear: relative.birthYear, deathYear: relative.deathYear)
     }
 }
 

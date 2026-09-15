@@ -45,7 +45,8 @@ struct LivePeopleRepository: PeopleRepository {
     }
 
     private static func refreshIssue(from error: Error) -> RepositoryIssue {
-        let message = (error as? LocalizedError)?.errorDescription
+        let message =
+            (error as? LocalizedError)?.errorDescription
             ?? "Saved data is shown because the latest records could not be loaded."
         return .refreshFailed(message: message)
     }

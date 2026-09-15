@@ -16,13 +16,13 @@ enum RecordsClientError: LocalizedError, Equatable, Sendable {
         switch self {
         case .invalidResponse:
             "The records service returned an invalid response."
-        case let .httpStatus(statusCode):
+        case .httpStatus(let statusCode):
             "The records service returned HTTP status \(statusCode)."
         case .decoding:
             "The records service returned data in an unexpected format."
-        case let .invalidData(reason):
+        case .invalidData(let reason):
             "The records service returned an invalid record: \(reason)"
-        case let .transport(message):
+        case .transport(let message):
             "The records service could not be reached: \(message)"
         }
     }
@@ -52,7 +52,8 @@ actor URLSessionRecordsClient: RecordsClient {
 
     func fetchProfile(id: PersonID) async throws -> PersonProfile {
         guard !id.rawValue.isEmpty,
-              id.rawValue.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) == nil else {
+            id.rawValue.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) == nil
+        else {
             throw RecordsClientError.invalidData("Person ID cannot contain path separators.")
         }
         let escapedID = id.rawValue.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
@@ -113,8 +114,9 @@ private struct PersonSummaryDTO: Decodable {
     func domainModel(baseURL: URL) throws -> PersonSummary {
         let portrait = try portraitUrl.map { path -> PortraitReference in
             guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL,
-                  url.scheme == baseURL.scheme,
-                  url.host == baseURL.host else {
+                url.scheme == baseURL.scheme,
+                url.host == baseURL.host
+            else {
                 throw RecordsClientError.invalidData("Portrait URL is not relative to the service.")
             }
             return PortraitReference(key: path, remoteURL: url)

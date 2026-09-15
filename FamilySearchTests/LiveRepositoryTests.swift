@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+
 @testable import FamilySearch
 
 @MainActor
@@ -59,9 +60,11 @@ final class LiveRepositoryTests: XCTestCase {
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = FilePortraitStore(directory: directory)
-        let bytes = try XCTUnwrap(Data(base64Encoded:
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
-        ))
+        let bytes = try XCTUnwrap(
+            Data(
+                base64Encoded:
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+            ))
         let client = PortraitClientSpy(result: .success(bytes))
         let repository = LivePortraitRepository(client: client, store: store)
         let portrait = PortraitReference(
@@ -96,7 +99,7 @@ final class LiveRepositoryTests: XCTestCase {
         repository.finishRequest(at: 0, with: RepositoryResult([older]))
         await olderLoad.value
 
-        guard case let .content(rows, _, _) = viewModel.state else {
+        guard case .content(let rows, _, _) = viewModel.state else {
             return XCTFail("Expected content")
         }
         XCTAssertEqual(rows.map(\.id), [newer.id])

@@ -2,10 +2,6 @@ import Foundation
 
 struct PersonID: RawRepresentable, Hashable, Sendable {
     let rawValue: String
-
-    init(rawValue: String) {
-        self.rawValue = rawValue
-    }
 }
 
 struct PersonName: Hashable, Sendable {

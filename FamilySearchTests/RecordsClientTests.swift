@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+
 @testable import FamilySearch
 
 final class RecordsClientTests: XCTestCase {
@@ -44,7 +45,7 @@ final class RecordsClientTests: XCTestCase {
             return (.success(statusCode: 200), Data())
         }
 
-        await XCTAssertThrowsErrorAsync(
+        await assertThrowsErrorAsync(
             try await client.fetchProfile(id: PersonID(rawValue: "family/person"))
         ) { error in
             XCTAssertEqual(
@@ -59,7 +60,7 @@ final class RecordsClientTests: XCTestCase {
             (.success(statusCode: 503), Data("not json".utf8))
         }
 
-        await XCTAssertThrowsErrorAsync(try await client.fetchPeople()) { error in
+        await assertThrowsErrorAsync(try await client.fetchPeople()) { error in
             XCTAssertEqual(error as? RecordsClientError, .httpStatus(503))
         }
     }
@@ -69,7 +70,7 @@ final class RecordsClientTests: XCTestCase {
             (.success(statusCode: 200), Data(#"{"persons":"wrong type"}"#.utf8))
         }
 
-        await XCTAssertThrowsErrorAsync(try await client.fetchPeople()) { error in
+        await assertThrowsErrorAsync(try await client.fetchPeople()) { error in
             XCTAssertEqual(error as? RecordsClientError, .decoding)
         }
     }
@@ -81,7 +82,7 @@ final class RecordsClientTests: XCTestCase {
             (.success(statusCode: 200), Data(invalidFixture.utf8))
         }
 
-        await XCTAssertThrowsErrorAsync(
+        await assertThrowsErrorAsync(
             try await client.fetchProfile(id: PersonID(rawValue: "L4RX-9FT"))
         ) { error in
             XCTAssertEqual(
@@ -94,7 +95,7 @@ final class RecordsClientTests: XCTestCase {
     func testFetchPeopleWrapsTransportFailure() async {
         let client = makeClient { _ in throw URLError(.notConnectedToInternet) }
 
-        await XCTAssertThrowsErrorAsync(try await client.fetchPeople()) { error in
+        await assertThrowsErrorAsync(try await client.fetchPeople()) { error in
             guard case .transport = error as? RecordsClientError else {
                 return XCTFail("Expected typed transport error, got \(error)")
             }
@@ -138,8 +139,8 @@ private func fixture(named name: String) throws -> Data {
     return try Data(contentsOf: XCTUnwrap(url))
 }
 
-private extension HTTPURLResponse {
-    static func success(statusCode: Int) -> HTTPURLResponse {
+extension HTTPURLResponse {
+    fileprivate static func success(statusCode: Int) -> HTTPURLResponse {
         HTTPURLResponse(
             url: URL(string: "https://example.test")!,
             statusCode: statusCode,
@@ -188,7 +189,7 @@ private final class URLProtocolStub: URLProtocol, @unchecked Sendable {
     }
 }
 
-private func XCTAssertThrowsErrorAsync<T>(
+private func assertThrowsErrorAsync<T>(
     _ expression: @autoclosure () async throws -> T,
     _ errorHandler: (Error) -> Void,
     file: StaticString = #filePath,

@@ -6,11 +6,12 @@ enum PreviewContainer {
     static func populated() -> AppContainer {
         do {
             let store = try SwiftDataPeopleStore.makeInMemory()
-            return AppContainer(peopleRepository: StoredPeopleRepository(
-                store: store,
-                seedProfiles: [sampleProfile, livingProfile]
-            ),
-                                portraitRepository: PreviewPortraitRepository())
+            return AppContainer(
+                peopleRepository: StoredPeopleRepository(
+                    store: store,
+                    seedProfiles: [sampleProfile, livingProfile]
+                ),
+                portraitRepository: PreviewPortraitRepository())
         } catch { preconditionFailure("Preview persistence failed: \(error)") }
     }
 
@@ -23,9 +24,12 @@ enum PreviewContainer {
             isLiving: false, birth: LifeEvent(date: "12 March 1868", year: 1868, place: "Nauvoo, Illinois"),
             death: LifeEvent(date: "3 November 1941", year: 1941, place: "Ogden, Utah"), portrait: nil
         ), occupation: "Carpenter", biography: "Ezra built homes and raised a family in northern Utah.",
-        relatives: [RelativeSummary(id: PersonID(rawValue: "KWJH-123"), relationship: .spouse,
-                                    name: PersonName(given: "Ada", surname: "Whitcomb"),
-                                    birthYear: 1871, deathYear: 1950)]
+        relatives: [
+            RelativeSummary(
+                id: PersonID(rawValue: "KWJH-123"), relationship: .spouse,
+                name: PersonName(given: "Ada", surname: "Whitcomb"),
+                birthYear: 1871, deathYear: 1950)
+        ]
     )
 
     private static let livingProfile = PersonProfile(
